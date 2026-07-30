@@ -2,78 +2,23 @@ import sqlite3
 import Utils.pure_smd_problems as smd_problems
 import numpy as np
 import pandas as pd
+from Utils.raw_data_gen import raw_data_gen
+from Utils.algo_performance_compute import algo_performance_compute
+from Utils.ela_gen import ela_gen
 
-SMD_UL_DIM = 2
-BBOB_DIM = 10
-LL_SMD_DIM = BBOB_DIM
-RANDOM_SEED = 1
-BBOB_LOWER_BOUND = -5.0
-BBOB_UPPER_BOUND = 5.0
-NUM_INSTANCES = 300
-
-BBOB_SUITE_PROB_NAMES = ['bbob1', 'bbob2', 'bbob3', 'bbob4', 'bbob5', 'bbob6', 'bbob7', 'bbob8', 'bbob9', 'bbob10', 'bbob11', 'bbob12', 'bbob13', 'bbob14', 'bbob15', 'bbob16', 'bbob17', 'bbob18', 'bbob19', 'bbob20', 'bbob21', 'bbob22', 'bbob23', 'bbob24']
-SMD_SUITE_PROB_NAMES = ['smd1', 'smd2', 'smd3', 'smd4', 'smd5', 'smd6', 'smd7', 'smd8']
-ELA_FEATURES = [
-    "ela_meta.lin_simple.adj_r2",
-    "ela_meta.lin_simple.intercept",
-    "ela_meta.lin_simple.coef.min",
-    "ela_meta.lin_simple.coef.max",
-    "ela_meta.lin_simple.coef.max_by_min",
-    "ela_meta.lin_w_interact.adj_r2",
-    "ela_meta.quad_simple.adj_r2",
-    "ela_meta.quad_w_interact.adj_r2",
-    "ela_distr.skewness",
-    "ela_distr.kurtosis",
-    "ela_distr.number_of_peaks",
-    "ela_level.mmce_lda_10",
-    "ela_level.mmce_qda_10",
-    "ela_level.lda_qda_10",
-    "ela_level.mmce_lda_25",
-    "ela_level.mmce_qda_25",
-    "ela_level.lda_qda_25",
-    "ela_level.mmce_lda_50",
-    "ela_level.mmce_qda_50",
-    "ela_level.lda_qda_50",
-    "disp.ratio_mean_02",
-    "disp.ratio_mean_05",
-    "disp.ratio_mean_10",
-    "disp.ratio_median_02",
-    "disp.ratio_median_05",
-    "disp.ratio_median_10",
-    "disp.diff_mean_02",
-    "disp.diff_mean_05",
-    "disp.diff_mean_10",
-    "disp.diff_mean_25",
-    "disp.diff_median_02",
-    "disp.diff_median_05",
-    "disp.diff_median_10",
-    "disp.diff_median_25",
-    "ic.eps_s",
-    "ic.eps_max",
-    "ic.m0",
-    "nbc.nn_nb.sd_ratio",
-    "nbc.nn_nb.cor",
-    "nbc.dist_ratio.coeff_var",
-    "nbc.nb_fitness.cor",
-    "pca.expl_var_PC1.cor_init",
-    "fitness_distance.fd_correlation",
-    "fitness_distance.fd_cov",
-    "fitness_distance.distance_mean",
-    "fitness_distance.distance_std",
-    "fitness_distance.fitness_mean",
-    "fitness_distance.fitness_std",
-]    
 
 ################################################################################################
 ################################################################################################
-def creat_suites_table():
-    conn = sqlite3.connect('DataBase/optialgosel.db')
+def creat_suites_table(db_dir):
+    conn = sqlite3.connect(db_dir)
     cur = conn.cursor()
 
     cur.execute('''CREATE TABLE IF NOT EXISTS suites(
         suite_id INTEGER PRIMARY KEY AUTOINCREMENT,
         suite_name TEXT UNIQUE NOT NULL,
-        suite_description TEXT
+        suite_description TEXT,
+        num_fun INTEGER,
+        num_inst INTEGER
         )''')
     
     conn.commit()
@@ -81,15 +26,15 @@ def creat_suites_table():
     conn.close()
     return
 ################################################################################################
-def create_problems_table():
-    conn = sqlite3.connect('DataBase/optialgosel.db')
+def create_problems_table(db_dir):
+    conn = sqlite3.connect(db_dir)
     cur = conn.cursor()
     
     cur.execute('''CREATE TABLE IF NOT EXISTS problems(
         problem_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        suite_id INTEGER NOT NULL,
         problem_name TEXT NOT NULL,
         problem_number INTEGER NOT NULL,
+        suite_id INTEGER NOT NULL,
         FOREIGN KEY(suite_id) REFERENCES suites(suite_id)
         )''')
         
@@ -98,8 +43,8 @@ def create_problems_table():
     conn.close()
     return
 ################################################################################################
-def create_problem_configs_table():
-    conn = sqlite3.connect('DataBase/optialgosel.db')
+def create_problem_configs_table(db_dir):
+    conn = sqlite3.connect(db_dir)
     cur = conn.cursor()
     
     cur.execute('''CREATE TABLE IF NOT EXISTS problem_configs(
@@ -115,8 +60,8 @@ def create_problem_configs_table():
     conn.close()
     return
 ################################################################################################
-def create_variable_bounds_table():
-    conn = sqlite3.connect('DataBase/optialgosel.db')
+def create_variable_bounds_table(db_dir):
+    conn = sqlite3.connect(db_dir)
     cur = conn.cursor()
     
     cur.execute('''CREATE TABLE IF NOT EXISTS variable_bounds(
@@ -133,8 +78,8 @@ def create_variable_bounds_table():
     conn.close()
     return
 ################################################################################################
-def create_problem_instances_table():
-    conn = sqlite3.connect('DataBase/optialgosel.db')
+def create_problem_instances_table(db_dir):
+    conn = sqlite3.connect(db_dir)
     cur = conn.cursor()
     
     cur.execute('''CREATE TABLE IF NOT EXISTS problem_instances(
@@ -150,15 +95,15 @@ def create_problem_instances_table():
     conn.close()
     return
 ################################################################################################
-def create_sampling_sets_table():
-    conn = sqlite3.connect('DataBase/optialgosel.db')
+def create_sampling_sets_table(db_dir):
+    conn = sqlite3.connect(db_dir)
     cur = conn.cursor()
     
     cur.execute('''CREATE TABLE IF NOT EXISTS sampling_sets(
         sampling_set_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        problem_dim INTEGER NOT NULL,
         sampling_method TEXT NOT NULL,
         num_points INTEGER NOT NULL,
+        problem_dim INTEGER NOT NULL,
         random_seed INTEGER,
         UNIQUE(problem_dim, sampling_method, num_points)
         )''')
@@ -168,8 +113,8 @@ def create_sampling_sets_table():
     conn.close()
     return
 ################################################################################################
-def create_sampling_points_table():
-    conn = sqlite3.connect('DataBase/optialgosel.db')
+def create_sampling_points_table(db_dir):
+    conn = sqlite3.connect(db_dir)
     cur = conn.cursor()
     
     cur.execute('''CREATE TABLE IF NOT EXISTS sampling_points(
@@ -185,8 +130,8 @@ def create_sampling_points_table():
     conn.close()
     return
 ################################################################################################
-def create_sampling_coordinates_table():
-    conn = sqlite3.connect('DataBase/optialgosel.db')
+def create_sampling_coordinates_table(db_dir):
+    conn = sqlite3.connect(db_dir)
     cur = conn.cursor()
     
     cur.execute('''CREATE TABLE IF NOT EXISTS sampling_coordinates(
@@ -202,8 +147,8 @@ def create_sampling_coordinates_table():
     conn.close()
     return
 ################################################################################################
-def create_objective_values_table():
-    conn = sqlite3.connect('DataBase/optialgosel.db')
+def create_objective_values_table(db_dir):
+    conn = sqlite3.connect(db_dir)
     cur = conn.cursor()
     
     cur.execute('''CREATE TABLE IF NOT EXISTS objective_values(
@@ -220,8 +165,8 @@ def create_objective_values_table():
     conn.close()
     return
 ################################################################################################
-def create_algorithms_table():
-    conn = sqlite3.connect('DataBase/optialgosel.db')
+def create_algorithms_table(db_dir):
+    conn = sqlite3.connect(db_dir)
     cur = conn.cursor()
     
     cur.execute('''CREATE TABLE IF NOT EXISTS algorithms(
@@ -235,8 +180,8 @@ def create_algorithms_table():
     conn.close()
     return 
 ################################################################################################
-def create_performance_metrics_table():
-    conn = sqlite3.connect('DataBase/optialgosel.db')
+def create_performance_metrics_table(db_dir):
+    conn = sqlite3.connect(db_dir)
     cur = conn.cursor()
     
     cur.execute('''CREATE TABLE IF NOT EXISTS performance_metrics(
@@ -250,15 +195,17 @@ def create_performance_metrics_table():
     conn.close()   
     return
 ################################################################################################
-def create_algorithm_performance_table():
-    conn = sqlite3.connect('DataBase/optialgosel.db')
+def create_algorithm_performance_table(db_dir):
+    conn = sqlite3.connect(db_dir)
     cur = conn.cursor()
+    
+    cur.execute("DROP TABLE IF EXISTS algorithm_performance")
     
     cur.execute('''CREATE TABLE IF NOT EXISTS algorithm_performance(
         instance_id INTEGER NOT NULL,
         algorithm_id INTEGER NOT NULL,
         metric_id INTEGER NOT NULL,
-        metric_value REAL,
+        metric_value BLOB,
         PRIMARY KEY(instance_id, algorithm_id, metric_id),
         FOREIGN KEY(instance_id) REFERENCES problem_instances(instance_id),
         FOREIGN KEY(algorithm_id) REFERENCES algorithms(algorithm_id),
@@ -270,8 +217,8 @@ def create_algorithm_performance_table():
     conn.close()
     return
 ################################################################################################
-def create_features_table():
-    conn = sqlite3.connect('DataBase/optialgosel.db')
+def create_features_table(db_dir):
+    conn = sqlite3.connect(db_dir)
     cur = conn.cursor()
     
     cur.execute('''CREATE TABLE IF NOT EXISTS features(
@@ -285,8 +232,8 @@ def create_features_table():
     conn.close()
     return
 ################################################################################################
-def create_feature_values_table():
-    conn = sqlite3.connect('DataBase/optialgosel.db')
+def create_feature_values_table(db_dir):
+    conn = sqlite3.connect(db_dir)
     cur = conn.cursor()
     
     cur.execute('''CREATE TABLE IF NOT EXISTS feature_values(
@@ -306,22 +253,22 @@ def create_feature_values_table():
 ################################################################################################
 ################################################################################################
 
-def create_tables():
-    
-    creat_suites_table()
-    create_problems_table()
-    create_problem_configs_table()
-    create_variable_bounds_table()
-    create_problem_instances_table()
-    create_sampling_sets_table()
-    create_sampling_points_table()
-    create_sampling_coordinates_table()
-    create_objective_values_table()
-    create_algorithms_table()
-    create_performance_metrics_table()
-    create_algorithm_performance_table()
-    create_features_table()
-    create_feature_values_table()
+def create_database_schema(db_dir):
+        
+    creat_suites_table(db_dir)
+    create_problems_table(db_dir)
+    create_problem_configs_table(db_dir)
+    create_variable_bounds_table(db_dir)
+    create_problem_instances_table(db_dir)
+    create_sampling_sets_table(db_dir)
+    create_sampling_points_table(db_dir)
+    create_sampling_coordinates_table(db_dir)
+    create_objective_values_table(db_dir)
+    create_algorithms_table(db_dir)
+    create_performance_metrics_table(db_dir)
+    create_algorithm_performance_table(db_dir)
+    create_features_table(db_dir)
+    create_feature_values_table(db_dir)
     
     return
 
@@ -329,55 +276,52 @@ def create_tables():
 ################################################################################################
 ################################################################################################
 
-def init_suites_table():
-    conn = sqlite3.connect('DataBase/optialgosel.db')
+def populate_suites_table(suite_list, db_dir):
+    conn = sqlite3.connect(db_dir)
     cur = conn.cursor()
     
-    suite_names = ['BBOB', 'SMD']
-    for name in suite_names:
-        cur.execute("INSERT INTO suites (suite_name, suite_description) VALUES (?, ?)", (name, name))
+    for suite in suite_list:
+        cur.execute("INSERT INTO suites (suite_name, suite_description, num_fun, num_inst) VALUES (?, ?, ?, ?)", (suite['suite_name'], suite['description'], suite['num_fun'], suite['num_inst']))
         
     conn.commit()
     cur.close()
     conn.close()
     return
 ################################################################################################
-def init_problems_table():
-    conn = sqlite3.connect('DataBase/optialgosel.db')
+def populate_problems_table(db_dir):
+    conn = sqlite3.connect(db_dir)
     cur = conn.cursor()
     
-    for num, name in enumerate(BBOB_SUITE_PROB_NAMES):
-        cur.execute("SELECT suite_id FROM suites WHERE suite_name = ?", ('BBOB',))
-        suite_id = cur.fetchone()[0]
-        cur.execute("INSERT INTO problems (suite_id, problem_name, problem_number) VALUES (?, ?, ?)", (suite_id, name, num+1))
-        
-    for num, name in enumerate(SMD_SUITE_PROB_NAMES):
-        cur.execute("SELECT suite_id FROM suites WHERE suite_name = ?", ('SMD',))
-        suite_id = cur.fetchone()[0]
-        cur.execute("INSERT INTO problems (suite_id, problem_name, problem_number) VALUES (?, ?, ?)", (suite_id, name, num+1))
+    cur.execute("SELECT suite_id, suite_name, num_fun FROM suites")
+    suites = cur.fetchall()
+    
+    for (suite_id, suite_name, num_fun) in suites:
+        for problem_number in range(1, num_fun+1):
+            problem_name = suite_name + str(problem_number)
+            cur.execute("INSERT INTO problems (problem_name, problem_number, suite_id) VALUES (?, ?, ?)", (problem_name, problem_number, suite_id))
     
     conn.commit()
     cur.close()
     conn.close()
     return
 ################################################################################################
-def init_problem_configs_table():
-    conn = sqlite3.connect('DataBase/optialgosel.db')
+def populate_problem_configs_table(prob_dim, db_dir):
+    conn = sqlite3.connect(db_dir)
     cur = conn.cursor()
     
     cur.execute("SELECT problem_id FROM problems")
     problem_ids = cur.fetchall()
     
     for (problem_id, ) in problem_ids:
-        cur.execute("INSERT INTO problem_configs (problem_id, problem_dim) VALUES (?, ?)", (problem_id, BBOB_DIM))
+        cur.execute("INSERT INTO problem_configs (problem_id, problem_dim) VALUES (?, ?)", (problem_id, prob_dim))
         
     conn.commit()
     cur.close()
     conn.close()
     return
 ################################################################################################
-def init_variable_bounds_table():
-    conn = sqlite3.connect('DataBase/optialgosel.db')
+def populate_variable_bounds_table(ul_dim_smd, lb_bbob, ub_bbob, db_dir):
+    conn = sqlite3.connect(db_dir)
     cur = conn.cursor()
 
     cur.execute('''SELECT pc.config_id, pc.problem_dim, p.problem_name, s.suite_name FROM problem_configs pc
@@ -389,29 +333,30 @@ def init_variable_bounds_table():
     for (config_id, problem_dim, problem_name, suite_name) in configs:
         if suite_name == 'BBOB':
             for variable_idx in range(1, problem_dim+1):
-                cur.execute("INSERT INTO variable_bounds (config_id, variable_idx, lower_bound, upper_bound) VALUES (?, ?, ?, ?)", (config_id, variable_idx, BBOB_LOWER_BOUND, BBOB_UPPER_BOUND))
+                cur.execute("INSERT INTO variable_bounds (config_id, variable_idx, lower_bound, upper_bound) VALUES (?, ?, ?, ?)", (config_id, variable_idx, lb_bbob, ub_bbob))
             
         if suite_name == 'SMD':
             smd_problem = getattr(smd_problems, problem_name.lower())
-            _, _, ll_lb, ll_ub = smd_problem(SMD_UL_DIM, problem_dim)
-            for lb, ub, variable_idx in zip(ll_lb, ll_ub, range(1, problem_dim+1)):
-                cur.execute("INSERT INTO variable_bounds (config_id, variable_idx, lower_bound, upper_bound) VALUES (?, ?, ?, ?)", (config_id, variable_idx, lb, ub))
-            
+            _, _, ll_lb, ll_ub = smd_problem(ul_dim_smd, problem_dim)
+            for smd_lb, smd_ub, variable_idx in zip(ll_lb, ll_ub, range(1, problem_dim+1)):
+                cur.execute("INSERT INTO variable_bounds (config_id, variable_idx, lower_bound, upper_bound) VALUES (?, ?, ?, ?)", (config_id, variable_idx, smd_lb, smd_ub))
         
     conn.commit()
     cur.close()
     conn.close()
     return
 ################################################################################################
-def init_problem_instances_table():
-    conn = sqlite3.connect('DataBase/optialgosel.db')
+def populate_problem_instances_table(db_dir):
+    conn = sqlite3.connect(db_dir)
     cur = conn.cursor()
     
-    cur.execute("SELECT config_id FROM problem_configs")
-    config_ids = cur.fetchall()
+    cur.execute('''SELECT pc.config_id, s.num_inst FROM problem_configs pc
+                   JOIN problems p ON pc.problem_id = p.problem_id
+                   JOIN suites s ON p.suite_id = s.suite_id''')
+    configs = cur.fetchall()
     
-    for (config_id, ) in config_ids:
-        for instance_num in range(1, NUM_INSTANCES + 1):
+    for (config_id, num_inst) in configs:
+        for instance_num in range(1, num_inst + 1):
             cur.execute("INSERT INTO problem_instances (config_id, instance_num) VALUES (?, ?)", (config_id, instance_num))
             
     conn.commit()
@@ -419,21 +364,20 @@ def init_problem_instances_table():
     conn.close()
     return   
 ################################################################################################
-def init_sampling_sets_table():
-    conn = sqlite3.connect('DataBase/optialgosel.db')
+def populate_sampling_sets_table(sampling_set_list, db_dir):
+    conn = sqlite3.connect(db_dir)
     cur = conn.cursor()
-    
-    num_sampling_points = 250*BBOB_DIM
-    
-    cur.execute("INSERT INTO sampling_sets (problem_dim, sampling_method, num_points, random_seed) VALUES (?, ?, ?, ?)", (BBOB_DIM, 'Sobol', num_sampling_points, RANDOM_SEED))
         
+    for sampling_set in sampling_set_list:
+        cur.execute("INSERT INTO sampling_sets (sampling_method, num_points, problem_dim, random_seed) VALUES (?, ?, ?, ?)", (sampling_set['sampling_method'], sampling_set['num_points'], sampling_set['problem_dim'], sampling_set['random_seed']))
+            
     conn.commit()
     cur.close()
     conn.close()
     return
 ################################################################################################
-def init_sampling_points_table():
-    conn = sqlite3.connect('DataBase/optialgosel.db')
+def populate_sampling_points_table(db_dir):
+    conn = sqlite3.connect(db_dir)
     cur = conn.cursor()
     
     cur.execute("SELECT sampling_set_id, num_points FROM sampling_sets")
@@ -448,111 +392,227 @@ def init_sampling_points_table():
     conn.close()
     return
 ################################################################################################
-def init_sampling_coordinates_table():
-    conn = sqlite3.connect('DataBase/optialgosel.db')
+def populate_doe_tables(ul_dim_smd, db_dir):    
+    conn = sqlite3.connect(db_dir)
     cur = conn.cursor()
     
-    doe = np.load(f'Resources/doe_{BBOB_DIM}d.npy')
+    cur.execute("SELECT suite_name, num_fun, num_inst FROM suites")
+    suites = cur.fetchall()
     
+    for (suite_name, num_fun, num_inst) in suites:
+        if suite_name == 'BBOB':
+            num_fun_bbob = num_fun
+        if suite_name == 'SMD':
+            num_fun_smd = num_fun
+        num_inst = num_inst
+        
+    cur.execute("SELECT num_points, problem_dim FROM sampling_sets")
+    (num_sample_points, prob_dim) = cur.fetchone()
+    
+    cur.execute('''SELECT p.problem_name FROM problems p
+                JOIN suites s ON s.suite_id == p.suite_id
+                WHERE s.suite_name == 'SMD' ''')
+    
+    smd_problem_list = []
+    
+    for (problem_name, ) in cur.fetchall():
+        smd_problem_list.append(problem_name)
+        
+        
+    cur.execute('''SELECT vb.lower_bound, vb.upper_bound FROM variable_bounds vb
+                   JOIN problem_configs pc ON pc.config_id = vb.config_id
+                   JOIN problems p ON p.problem_id = pc.problem_id
+                   JOIN suites s ON s.suite_id = p.suite_id
+                   WHERE s.suite_name == 'BBOB' ''')
+    
+    (lb_bbob, ub_bbob) = cur.fetchone()
+    
+    conn.commit()
+    cur.close()
+    conn.close()
+    
+    #doe, obj_val_bbob, obj_val_smd = raw_data_gen(num_fun_bbob, num_fun_smd, num_inst, num_sample_points, prob_dim, ul_dim_smd, prob_dim, ub_bbob, lb_bbob, smd_problem_list)
+
+    doe = np.load(f'Resources/doe_{prob_dim}d.npy')
+    obj_val_bbob = np.load(f'Resources/obj_val_bbob_total_{prob_dim}d.npy')
+    obj_val_smd = np.load(f'Resources/obj_val_smd_total_{prob_dim}d.npy')
+    
+    #populate_sampling_coordinates_table(doe, db_dir)
+    populate_objective_values_table(obj_val_bbob, obj_val_smd, db_dir)
+    
+    return
+
+################################################################################################
+def populate_sampling_coordinates_table(doe, db_dir):
+    conn = sqlite3.connect(db_dir)
+    cur = conn.cursor()
+        
     cur.execute("SELECT point_id FROM sampling_points")
     all_point_ids = cur.fetchall()
     
+    cur.execute("SELECT problem_dim FROM sampling_sets")
+    (prob_dim, ) = cur.fetchone()
+    
     for i, (point_id, ) in enumerate(all_point_ids):
-        for variable_idx in range(1, BBOB_DIM+1):
-            cur.execute("INSERT INTO sampling_coordinates (point_id, variable_idx, coordinate) VALUES (?, ?, ?)", (point_id, variable_idx, doe[i, variable_idx-1]))
+        for variable_idx in range(1, prob_dim+1):
+            cur.execute("INSERT INTO sampling_coordinates (point_id, variable_idx, coordinate) VALUES (?, ?, ?)", (point_id, variable_idx, float(doe[i, variable_idx-1])))
    
     conn.commit()
     cur.close()
     conn.close()
     return
 ################################################################################################
-def init_objective_values_table():
-    conn = sqlite3.connect('DataBase/optialgosel.db')
+def populate_objective_values_table(obj_val_bbob, obj_val_smd, db_dir):
+    conn = sqlite3.connect(db_dir)
     cur = conn.cursor()
     
-    doe_bbob_total = np.load(f'Resources/doe_bbob_total_{BBOB_DIM}d.npy')
-    doe_smd_total = np.load(f'Resources/doe_smd_total_{LL_SMD_DIM}d.npy')
+    cur.execute('''SELECT pi.instance_id FROM problem_instances pi
+                   JOIN problem_configs pc ON pi.config_id = pc.config_id
+                   JOIN problems p ON pc.problem_id = p.problem_id
+                   JOIN suites s ON p.suite_id = s.suite_id
+                   WHERE s.suite_name == 'BBOB' ''')
+    all_instance_ids_bbob = cur.fetchall()
+
+    cur.execute('''SELECT pi.instance_id FROM problem_instances pi
+                   JOIN problem_configs pc ON pi.config_id = pc.config_id
+                   JOIN problems p ON pc.problem_id = p.problem_id
+                   JOIN suites s ON p.suite_id = s.suite_id
+                   WHERE s.suite_name == 'SMD' ''')
+    all_instance_ids_smd = cur.fetchall()
     
+    cur.execute("SELECT point_id FROM sampling_points")
+    all_point_ids = cur.fetchall()
     
+    cur.execute("SELECT num_points FROM sampling_sets")
+    (num_sample_points, ) = cur.fetchone()
+    
+    for i, (instance_id, ) in enumerate(all_instance_ids_bbob):
+        for j, (point_id, ) in enumerate(all_point_ids):
+            cur.execute("INSERT INTO objective_values (instance_id, point_id, objective_value) VALUES (?, ?, ?)", (instance_id, point_id, float(obj_val_bbob[i*num_sample_points+j])))
+    
+    for i, (instance_id, ) in enumerate(all_instance_ids_smd):
+        for j, (point_id, ) in enumerate(all_point_ids):
+            cur.execute("INSERT INTO objective_values (instance_id, point_id, objective_value) VALUES (?, ?, ?)", (instance_id, point_id, float(obj_val_smd[i*num_sample_points+j])))
     
     conn.commit()
     cur.close()
     conn.close()
     return
 ################################################################################################   
-def init_algorithms_table():
-    conn = sqlite3.connect('DataBase/optialgosel.db')
+def populate_algorithms_table(algorithm_list, db_dir):
+    conn = sqlite3.connect(db_dir)
     cur = conn.cursor()
     
-    algorithm_names = ['CMAES', 'ES', 'GA', 'DE', 'PSO', 'NM', 'PS']
-    algorithm_descriptions = ['Covariance Matrix Adaptation Evolution Strategy', 'Evolution Strategy', 'Genetic Algorithm', 'Differential Evolution', 'Particle Swarm Optimization', 'Nelder-Mead', 'Particle Swarm']
-    
-    for algorithm_name, algorithm_description in zip(algorithm_names, algorithm_descriptions):
-        cur.execute("INSERT INTO algorithms (algorithm_name, algorithm_description) VALUES (?, ?)", (algorithm_name, algorithm_description))
-
+    for algorithm in algorithm_list:
+        cur.execute("INSERT INTO algorithms (algorithm_name, algorithm_description) VALUES (?, ?)", (algorithm['algorithm_name'], algorithm['algorithm_description']))
+   
     conn.commit()
     cur.close()
     conn.close()
     return
 ################################################################################################    
-def init_performance_metrics_table():
-    conn = sqlite3.connect('DataBase/optialgosel.db')
+def populate_performance_metrics_table(per_metric_list, db_dir):
+    conn = sqlite3.connect(db_dir)
     cur = conn.cursor()
     
-    perfromance_metrics = ['Optimal Solution']
-    
-    for metric_name in perfromance_metrics:
-        cur.execute("INSERT INTO performance_metrics (metric_name, metric_description) VALUES (?, ?)", (metric_name, metric_name))
+    for metric_name in per_metric_list:
+        cur.execute("INSERT INTO performance_metrics (metric_name, metric_description) VALUES (?, ?)", (metric_name['metric_name'], metric_name['metric_description']))
         
     conn.commit()
     cur.close()
     conn.close()
     return
 ################################################################################################
-def init_algorithm_performance_table():
-    opt_sol_bbob = np.load(f'Resources/optimal_solution_bbob_{BBOB_DIM}d.npy')
-    opt_sol_smd = np.load(f'Resources/optimal_solution_smd_{BBOB_DIM}d.npy')
-    
-    med_opt_sol_bbob = np.median(opt_sol_bbob, axis=1)
-    med_opt_sol_smd = np.median(opt_sol_smd, axis=1)
-    
-    conn = sqlite3.connect('DataBase/optialgosel.db')
+def populate_algorithm_performance_table(opt_budget, num_run, ul_dim_smd, db_dir):
+    conn = sqlite3.connect(db_dir)
     cur = conn.cursor()
+    
+    cur.execute("SELECT suite_name, num_fun, num_inst FROM suites")
+    suites = cur.fetchall()
+    
+    for (suite_name, num_fun, num_inst) in suites:
+        if suite_name == 'BBOB':
+            num_fun_bbob = num_fun
+        if suite_name == 'SMD':
+            num_fun_smd = num_fun
+        num_inst = num_inst
+        
+    cur.execute("SELECT num_points, problem_dim FROM sampling_sets")
+    (num_sample_points, prob_dim) = cur.fetchone()
+    
+    cur.execute('''SELECT p.problem_name FROM problems p
+                JOIN suites s ON s.suite_id == p.suite_id
+                WHERE s.suite_name == 'SMD'
+                ''')
+    
+    smd_problem_list = []
+    
+    for (problem_name, ) in cur.fetchall():
+        smd_problem_list.append(problem_name)
+        
+        
+    cur.execute('''SELECT vb.lower_bound, vb.upper_bound FROM variable_bounds vb
+                   JOIN problem_configs pc ON pc.config_id = vb.config_id
+                   JOIN problems p ON p.problem_id = pc.problem_id
+                   JOIN suites s ON s.suite_id = p.suite_id
+                   WHERE s.suite_name == 'BBOB'
+                ''')
+    
+    (lb_bbob, ub_bbob) = cur.fetchone()
+    
+    
+    #opt_sol_bbob, opt_sol_smd = algo_performance_compute(opt_budget, num_fun_bbob, num_fun_smd, num_inst, prob_dim, ul_dim_smd, prob_dim, num_run, smd_problem_list)
+    
+    opt_sol_bbob = np.load(f'Resources/optimal_solution_bbob_{prob_dim}d.npy')
+    opt_sol_smd = np.load(f'Resources/optimal_solution_smd_{prob_dim}d.npy')
+    
     
     cur.execute("SELECT algorithm_id FROM algorithms")
     algorithm_ids = cur.fetchall()
     
-    cur.execute('''SELECT pi.instance_id, s.suite_name FROM problem_instances pi
+    cur.execute('''SELECT pi.instance_id FROM problem_instances pi
                    JOIN problem_configs pc ON pi.config_id = pc.config_id
                    JOIN problems p ON pc.problem_id = p.problem_id
-                   JOIN suites s ON p.suite_id = s.suite_id 
+                   JOIN suites s ON p.suite_id = s.suite_id
+                   WHERE s.suite_name == 'BBOB'
                 ''')
-    instances = cur.fetchall()
+    instance_ids_bbob = cur.fetchall()
+    
+    cur.execute('''SELECT pi.instance_id FROM problem_instances pi
+                   JOIN problem_configs pc ON pi.config_id = pc.config_id
+                   JOIN problems p ON pc.problem_id = p.problem_id
+                   JOIN suites s ON p.suite_id = s.suite_id
+                   WHERE s.suite_name == 'SMD'
+                ''')
+    instance_ids_smd = cur.fetchall()
     
     cur.execute("SELECT algorithm_id FROM algorithms")
     algorithm_ids = cur.fetchall()
     
     cur.execute("SELECT metric_id FROM performance_metrics")
     metric_ids = cur.fetchall()
-    
-    for i, (instance_id, suite_name) in enumerate(instances):
+
+        
+    for i, (instance_id,) in enumerate(instance_ids_bbob):
         for j, (algorithm_id, ) in enumerate(algorithm_ids):
             for (metric_id, ) in metric_ids:
-                if suite_name == 'BBOB' and i<len(BBOB_SUITE_PROB_NAMES)*NUM_INSTANCES:
-                    cur.execute("INSERT INTO algorithm_performance (instance_id, algorithm_id, metric_id, metric_value) VALUES (?, ?, ?, ?)", (instance_id, algorithm_id, metric_id, med_opt_sol_bbob[i, j]))
-                if suite_name == 'SMD' and i>=len(BBOB_SUITE_PROB_NAMES)*NUM_INSTANCES:
-                    cur.execute("INSERT INTO algorithm_performance (instance_id, algorithm_id, metric_id, metric_value) VALUES (?, ?, ?, ?)", (instance_id, algorithm_id, metric_id, med_opt_sol_smd[i-len(BBOB_SUITE_PROB_NAMES)*NUM_INSTANCES, j]))
+                cur.execute("INSERT INTO algorithm_performance (instance_id, algorithm_id, metric_id, metric_value) VALUES (?, ?, ?, ?)", (instance_id, algorithm_id, metric_id, opt_sol_bbob[i, :, j].astype(np.float64).tobytes()))
+                            
+    for i, (instance_id,) in enumerate(instance_ids_smd):
+        for j, (algorithm_id, ) in enumerate(algorithm_ids):
+            for (metric_id, ) in metric_ids:
+                cur.execute("INSERT INTO algorithm_performance (instance_id, algorithm_id, metric_id, metric_value) VALUES (?, ?, ?, ?)", (instance_id, algorithm_id, metric_id, opt_sol_smd[i, :, j].astype(np.float64).tobytes()))
 
     conn.commit()
     cur.close()
     conn.close()
     return
 ################################################################################################
-def init_features_table():
-    conn = sqlite3.connect('DataBase/optialgosel.db')
+def populate_features_table(feature_list, db_dir):
+    conn = sqlite3.connect(db_dir)
     cur = conn.cursor()
     
-    for feature_name in ELA_FEATURES:
+    for feature_name in feature_list:
         cur.execute("INSERT INTO features (feature_name, feature_description) VALUES (?, ?)", (feature_name, feature_name))
         
     conn.commit()
@@ -560,29 +620,109 @@ def init_features_table():
     conn.close()
     return
 ################################################################################################
-def init_feature_values_table():   
-    ela_features_bbob = pd.read_csv(f'Resources/ela_bbob_processed_{BBOB_DIM}d.csv')
-    ela_features_smd = pd.read_csv(f'Resources/ela_smd_processed_{BBOB_DIM}d.csv')
-  
-    conn = sqlite3.connect('DataBase/optialgosel.db')
+def populate_feature_values_table(ul_dim_smd, num_seed, bootstrap_ratio, db_dir):   
+    conn = sqlite3.connect(db_dir)
     cur = conn.cursor()
-     
-    cur.execute('''SELECT pi.instance_id, s.suite_name FROM problem_instances pi
+    
+    cur.execute("SELECT suite_name, num_fun, num_inst FROM suites")
+    suites = cur.fetchall()
+    
+    for (suite_name, num_fun, num_inst) in suites:
+        if suite_name == 'BBOB':
+            num_fun_bbob = num_fun
+        if suite_name == 'SMD':
+            num_fun_smd = num_fun
+        num_inst = num_inst
+        
+    cur.execute("SELECT num_points, problem_dim FROM sampling_sets")
+    (num_sample_points, prob_dim) = cur.fetchone()
+    
+    cur.execute('''SELECT p.problem_name FROM problems p
+                JOIN suites s ON s.suite_id == p.suite_id
+                WHERE s.suite_name == 'SMD'
+                ''')
+    
+    smd_problem_list = []
+    
+    for (problem_name, ) in cur.fetchall():
+        smd_problem_list.append(problem_name)
+            
+    cur.execute('''SELECT vb.lower_bound, vb.upper_bound FROM variable_bounds vb
+                   JOIN problem_configs pc ON pc.config_id = vb.config_id
+                   JOIN problems p ON p.problem_id = pc.problem_id
+                   JOIN suites s ON s.suite_id = p.suite_id
+                   WHERE s.suite_name == 'BBOB'
+                ''')
+    
+    (lb_bbob, ub_bbob) = cur.fetchone()
+    
+    
+    cur.execute("SELECT point_id, variable_idx, coordinate FROM sampling_coordinates ORDER BY point_id, variable_idx")
+    
+    doe = np.zeros((num_sample_points, prob_dim))
+    for (i, j, val) in cur.fetchall():
+        doe[i-1, j-1] = val
+        
+    cur.execute('''SELECT ov.objective_value FROM objective_values ov
+                   JOIN problem_instances pi ON pi.instance_id = ov.instance_id
+                   JOIN problem_configs pc ON pc.config_id = pi.config_id
+                   JOIN problems p ON p.problem_id = pc.problem_id
+                   JOIN suites s ON s.suite_id = p.suite_id
+                   WHERE s.suite_name == 'BBOB'
+                   ORDER BY ov.instance_id, ov.point_id''')
+    
+    obj_val_bbob = []
+    for (val, ) in cur.fetchall():
+        obj_val_bbob.append(val)
+    
+    obj_val_bbob = np.array(obj_val_bbob)
+    
+    cur.execute('''SELECT ov.objective_value FROM objective_values ov
+                   JOIN problem_instances pi ON pi.instance_id = ov.instance_id
+                   JOIN problem_configs pc ON pc.config_id = pi.config_id
+                   JOIN problems p ON p.problem_id = pc.problem_id
+                   JOIN suites s ON s.suite_id = p.suite_id
+                   WHERE s.suite_name == 'SMD'
+                   ORDER BY ov.instance_id, ov.point_id''')
+    
+    obj_val_smd = []
+    for (val, ) in cur.fetchall():
+        obj_val_smd.append(val)
+    
+    obj_val_smd = np.array(obj_val_smd)
+    
+    
+    #ela_gen(doe, obj_val_bbob, obj_val_smd, num_sample_points, bootstrap_ratio, num_fun_bbob, num_fun_smd, num_inst, num_seed, ul_dim_smd, prob_dim, prob_dim, lb_bbob, ub_bbob, smd_problem_list)
+    
+    ela_features_bbob = pd.read_csv(f'Resources/ela_bbob_processed_{prob_dim}d.csv')
+    ela_features_smd = pd.read_csv(f'Resources/ela_smd_processed_{prob_dim}d.csv')
+
+    cur.execute('''SELECT pi.instance_id FROM problem_instances pi
                    JOIN problem_configs pc ON pi.config_id = pc.config_id
                    JOIN problems p ON pc.problem_id = p.problem_id
-                   JOIN suites s ON p.suite_id = s.suite_id 
+                   JOIN suites s ON p.suite_id = s.suite_id
+                   WHERE s.suite_name == 'BBOB'
                 ''')
-    instances = cur.fetchall()
+    instance_ids_bbob = cur.fetchall()
+    
+    cur.execute('''SELECT pi.instance_id FROM problem_instances pi
+                   JOIN problem_configs pc ON pi.config_id = pc.config_id
+                   JOIN problems p ON pc.problem_id = p.problem_id
+                   JOIN suites s ON p.suite_id = s.suite_id
+                   WHERE s.suite_name == 'SMD'
+                ''')
+    instance_ids_smd = cur.fetchall()
     
     cur.execute("SELECT feature_id FROM features")
     feature_ids = cur.fetchall()
     
-    for i, (instance_id, suite_name) in enumerate(instances):
+    for i, (instance_id, ) in enumerate(instance_ids_bbob):
         for j, (feature_id, ) in enumerate(feature_ids):
-            if suite_name == 'BBOB' and i<len(BBOB_SUITE_PROB_NAMES)*NUM_INSTANCES:
-                cur.execute("INSERT INTO feature_values (instance_id, feature_id, feature_type, feature_value) VALUES (?, ?, ?, ?)", (instance_id, feature_id, 'processed', ela_features_bbob.iloc[i, j]))
-            if suite_name == 'SMD' and i>=len(BBOB_SUITE_PROB_NAMES)*NUM_INSTANCES:
-                cur.execute("INSERT INTO feature_values (instance_id, feature_id, feature_type, feature_value) VALUES (?, ?, ?, ?)", (instance_id, feature_id, 'processed', ela_features_smd.iloc[i-len(BBOB_SUITE_PROB_NAMES)*NUM_INSTANCES, j]))
+            cur.execute("INSERT INTO feature_values (instance_id, feature_id, feature_type, feature_value) VALUES (?, ?, ?, ?)", (instance_id, feature_id, 'processed', ela_features_bbob.iloc[i, j]))
+            
+    for i, (instance_id, ) in enumerate(instance_ids_smd):
+        for j, (feature_id, ) in enumerate(feature_ids):
+            cur.execute("INSERT INTO feature_values (instance_id, feature_id, feature_type, feature_value) VALUES (?, ?, ?, ?)", (instance_id, feature_id, 'processed', ela_features_smd.iloc[i, j]))
                 
     conn.commit()
     cur.close()
@@ -592,22 +732,21 @@ def init_feature_values_table():
 ################################################################################################
 ################################################################################################
 ################################################################################################
-def init_tables():
+def populate_database(suite_list, prob_dim, ul_dim_smd, lb_bbob, ub_bbob, sampling_set_list, algortihm_list, per_metric_list, opt_budget, num_run, feature_names, num_seed, bootstrap_ratio, db_dir):
     
-    init_suites_table()
-    init_problems_table()
-    init_problem_configs_table()
-    init_variable_bounds_table()
-    init_problem_instances_table()
-    init_sampling_sets_table()
-    init_sampling_points_table()
-    init_sampling_coordinates_table()
-    init_objective_values_table()
-    init_algorithms_table()
-    init_performance_metrics_table()
-    init_algorithm_performance_table()
-    init_features_table()
-    init_feature_values_table()
+    populate_suites_table(suite_list, db_dir)
+    populate_problems_table(db_dir)
+    populate_problem_configs_table(prob_dim, db_dir)
+    populate_variable_bounds_table(ul_dim_smd, lb_bbob, ub_bbob, db_dir)
+    populate_problem_instances_table(db_dir)
+    populate_sampling_sets_table(sampling_set_list, db_dir)
+    populate_sampling_points_table(db_dir)
+    populate_doe_tables(ul_dim_smd, db_dir)
+    populate_algorithms_table(algortihm_list, db_dir)
+    populate_performance_metrics_table(per_metric_list, db_dir)
+    populate_algorithm_performance_table(opt_budget, num_run, ul_dim_smd,db_dir)
+    populate_features_table(feature_names, db_dir)
+    populate_feature_values_table(ul_dim_smd, num_seed, bootstrap_ratio, db_dir)
 
     return
 
