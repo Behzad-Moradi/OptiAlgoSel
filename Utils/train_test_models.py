@@ -17,6 +17,8 @@ from sklearn.metrics import hamming_loss, accuracy_score, precision_score, recal
 from scipy.stats import wilcoxon
 import sqlite3
 from collections import defaultdict
+from joblib import dump
+import json
 
 ################################# Computing Multiclass Labels #################################    
 def multi_class_labeling(num_fun_bbob, num_fun_smd, num_inst, opty_portfolio_results_bbob, opty_portfolio_results_smd, ll_solver_list):
@@ -64,7 +66,7 @@ def multi_class_labeling(num_fun_bbob, num_fun_smd, num_inst, opty_portfolio_res
 ###########################################################################################   
 ###########################################################################################
 
-def train_test_models(num_fun_bbob, num_fun_smd, num_inst, dim_bbob, db_dir, src_dir, res_dir):
+def train_test_models(num_fun_bbob, num_fun_smd, num_inst, dim_bbob, db_dir, src_dir, res_dir, model_dir):
     conn = sqlite3.connect(db_dir)
     cur = conn.cursor()
     
@@ -238,4 +240,27 @@ def train_test_models(num_fun_bbob, num_fun_smd, num_inst, dim_bbob, db_dir, src
     with open(f"{res_dir}/mlc_loso_results.pkl", "wb") as f:
         pickle.dump(mlc_loso_results, f) 
         
+################## Model Registry ################
+    
+    registry = []
+
+    for name, model in models.items():
+        filename = name.lower().replace(" ", "_") + ".joblib"
+        model.fit(scaled_reduced_sel_ela_features_bbob, y_multi_bbob)
+        dump(model, f"{model_dir}/{filename}")
+        registry.append({
+                            "model_name": name,
+                            "version": "1.0.0",
+                            "status": "archived",
+                            "file": filename
+                        })
+        
+    for model in registry:
+        if model["model_name"] == "SVM":
+            model["status"] = "production"     
+    
+    with open(f"{model_dir}/model_registry.json", "w") as f:
+        json.dump(registry, f, indent=4)
+
+    
     return mlc_loio_results, mlc_lopo_results, mlc_loso_results
