@@ -1,0 +1,20 @@
+# Ignore SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Ignore Python cache
+__pycache__/
+*.pyc
+
+# Ignore virtual environments
+.venv/
+
+# Ignore macOS files
+.DS_Store
+
+# Ignore VSCode settings
+.vscode/
+
+# Ignore the dataset generated on SPARTAN
+Resources/

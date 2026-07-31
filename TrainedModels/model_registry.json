@@ -1,0 +1,44 @@
+[
+    {
+        "model_name": "Dummy",
+        "version": "1.0.0",
+        "status": "archived",
+        "file": "dummy.joblib"
+    },
+    {
+        "model_name": "Random Uniform",
+        "version": "1.0.0",
+        "status": "archived",
+        "file": "random_uniform.joblib"
+    },
+    {
+        "model_name": "SVM",
+        "version": "1.0.0",
+        "status": "production",
+        "file": "svm.joblib"
+    },
+    {
+        "model_name": "XGBoost",
+        "version": "1.0.0",
+        "status": "archived",
+        "file": "xgboost.joblib"
+    },
+    {
+        "model_name": "Random Forest",
+        "version": "1.0.0",
+        "status": "archived",
+        "file": "random_forest.joblib"
+    },
+    {
+        "model_name": "KNN",
+        "version": "1.0.0",
+        "status": "archived",
+        "file": "knn.joblib"
+    },
+    {
+        "model_name": "MLP",
+        "version": "1.0.0",
+        "status": "archived",
+        "file": "mlp.joblib"
+    }
+]

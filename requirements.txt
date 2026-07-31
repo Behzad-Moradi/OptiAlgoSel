@@ -1,0 +1,16 @@
+numpy
+pandas
+sqlite3
+SQLAlchemy
+pflacco
+cocoex
+pymoo
+joblib
+pflacco
+sklearn
+torch
+xgboost
+matplotlib
+collections
+pickle
+json
