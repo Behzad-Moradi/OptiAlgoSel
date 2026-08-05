@@ -14,3 +14,6 @@ matplotlib
 collections
 pickle
 json
+fastapi
+uvicorn
+pydantic

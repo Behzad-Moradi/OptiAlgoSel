@@ -82,13 +82,13 @@ def main():
     RES_DIR = 'Results'
     MODEL_DIR = 'TrainedModels'
     
-    ALGORITHM_LIST = [{'algorithm_name': 'CMAES', 'algorithm_description': 'Covariance Matrix Adaptation Evolution Strategy'}, {'algorithm_name': 'ES', 'algorithm_description': 'Evolution Strategy'}, {'algorithm_name': 'GA', 'algorithm_description': 'Genetic Algorithm'}, {'algorithm_name': 'DE', 'algorithm_description': 'Differential Evolution'}, {'algorithm_name': 'PSO', 'algorithm_description': 'Particle Swarm Optimization'}, {'algorithm_name': 'NM', 'algorithm_description': 'Nelder-Mead'}, {'algorithm_name': 'PS', 'algorithm_description': 'Particle Swarm'}]
+    ALGORITHM_LIST = [{'algorithm_name': 'CMAES', 'algorithm_description': 'Covariance Matrix Adaptation Evolution Strategy'}, {'algorithm_name': 'ES', 'algorithm_description': 'Evolution Strategy'}, {'algorithm_name': 'GA', 'algorithm_description': 'Genetic Algorithm'}, {'algorithm_name': 'DE', 'algorithm_description': 'Differential Evolution'}, {'algorithm_name': 'PSO', 'algorithm_description': 'Particle Swarm Optimization'}, {'algorithm_name': 'NM', 'algorithm_description': 'Nelder-Mead'}, {'algorithm_name': 'PS', 'algorithm_description': 'Pattern Search'}]
      
     PERFORMANCE_METRIC_LIST = [{'metric_name': 'Optimal Solution', 'metric_description': 'Optimal Solution'}]
-
+    
     #create_database_schema(DATABASE_DIR)
     #populate_database(SUITE_LIST, PROB_DIM, UL_DIM_SMD, BBOB_LOWER_BOUND, BBOB_UPPER_BOUND, SAMPLING_SET_LIST, ALGORITHM_LIST, PERFORMANCE_METRIC_LIST, OPT_BUDGET, NUM_RUN, ELA_FEATURE_NAMES, NUM_SEED, BOOTSTRAP_RATIO, DATABASE_DIR)
-    train_test_models(NUM_FUN_BBOB, NUM_FUN_SMD, NUM_INST, PROB_DIM, DATABASE_DIR, SRC_DIR, RES_DIR, MODEL_DIR)
+    #train_test_models(NUM_FUN_BBOB, NUM_FUN_SMD, NUM_INST, PROB_DIM, DATABASE_DIR, SRC_DIR, RES_DIR, MODEL_DIR)
     #visualisation(NUM_FUN_BBOB, NUM_FUN_SMD, SRC_DIR, RES_DIR) 
     return
 
