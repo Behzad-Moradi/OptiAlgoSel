@@ -1,8 +1,6 @@
 import smtplib
 from email.message import EmailMessage
-
-SENDER_EMAIL = "behzad.moradi.kut@gmail.com"
-APP_PASSWORD = "apcfnbgfbeyxpgvh"
+from config import SENDER_EMAIL, APP_PASSWORD
 
 
 def send_email(user_email: str, predicted_algorithms: list):
