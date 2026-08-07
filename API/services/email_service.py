@@ -1,6 +1,6 @@
 import smtplib
 from email.message import EmailMessage
-from config import SENDER_EMAIL, APP_PASSWORD
+from API.config import SENDER_EMAIL, APP_PASSWORD
 
 
 def send_email(user_email: str, predicted_algorithms: list):

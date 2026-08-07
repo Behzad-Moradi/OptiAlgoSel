@@ -1,5 +1,4 @@
-import json
-from API.config import MODEL_PATH, MODEL_REGISTRY
+from API.config import MODEL_PATH
 from API.services.load_model_registery import load_model_registry
 
 def get_production_model():
