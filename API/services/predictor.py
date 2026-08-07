@@ -2,6 +2,7 @@
 from API.services.get_production_model import get_production_model
 import joblib
 
+
 def predict(fetures, conn):
     
     production_model = get_production_model()

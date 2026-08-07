@@ -1,0 +1,16 @@
+.git
+.gitignore
+
+__pycache__
+*.pyc
+*.pyo
+
+.vscode
+.env
+
+*.ipynb_checkpoints
+
+README.md
+Rsources/
+Results/
+DataBase/
