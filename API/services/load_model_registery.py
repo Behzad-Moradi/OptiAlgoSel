@@ -1,6 +1,6 @@
 import json
-from API.config import MODEL_REGISTRY
+from API.config import settings
 
 def load_model_registry():
-    with open(MODEL_REGISTRY, "r") as f:
+    with open(settings.MODEL_REGISTRY, "r") as f:
         return json.load(f)

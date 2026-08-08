@@ -1,4 +1,4 @@
-from API.config import MODEL_PATH
+from API.config import settings
 from API.services.load_model_registery import load_model_registry
 
 def get_production_model():
@@ -13,7 +13,7 @@ def get_production_model():
         return None
 
     production_model["path"] = (
-        MODEL_PATH / production_model["file"]
+        settings.MODEL_PATH / production_model["file"]
     )
 
     return production_model

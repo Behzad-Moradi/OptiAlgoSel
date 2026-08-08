@@ -1,6 +1,6 @@
 import smtplib
 from email.message import EmailMessage
-from API.config import SENDER_EMAIL, APP_PASSWORD
+from API.config import settings
 
 
 def send_email(user_email: str, predicted_algorithms: list):
@@ -9,7 +9,7 @@ def send_email(user_email: str, predicted_algorithms: list):
     message = EmailMessage()
 
     message["Subject"] = "OptiAlgoSel Prediction Results"
-    message["From"] = SENDER_EMAIL
+    message["From"] = settings.SENDER_EMAIL
     message["To"] = user_email
 
     algorithms = "\n".join(
@@ -35,7 +35,7 @@ def send_email(user_email: str, predicted_algorithms: list):
 
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-            smtp.login(SENDER_EMAIL, APP_PASSWORD)
+            smtp.login(settings.SENDER_EMAIL, settings.APP_PASSWORD)
             smtp.send_message(message)
 
         return "Email sent successfully."

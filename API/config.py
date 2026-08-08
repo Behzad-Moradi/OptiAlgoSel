@@ -1,37 +1,30 @@
 from pathlib import Path
-from dotenv import load_dotenv
-import os
+from pydantic import field_validator, EmailStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Get your base directory just like before
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-ENV_PATH = BASE_DIR / ".env"
+class Settings(BaseSettings):
+    # 1. Define fields and types (Missing fields will automatically throw a CRITICAL error)
+    DATABASE_PATH: Path  
+    MODEL_PATH: Path
+    MODEL_REGISTRY: Path
+    SENDER_EMAIL: EmailStr
+    APP_PASSWORD: str
 
-load_dotenv(ENV_PATH)
+    # 2. Tell Pydantic to read from your .env file
+    model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="ignore")
 
-DATABASE_PATH = Path(
-    os.getenv(
-        "DATABASE_PATH",
-        "DataBase/optialgosel.db"
-    )
-)
+    # 3. Automatically turn relative paths into absolute paths
+    @field_validator("DATABASE_PATH", "MODEL_PATH", "MODEL_REGISTRY", mode="before")
+    @classmethod
+    def make_paths_absolute(cls, value: str) -> Path:
+        path_obj = Path(value)
+        if not path_obj.is_absolute():
+            return BASE_DIR / path_obj
+        return path_obj
 
-
-MODEL_PATH = Path(
-    os.getenv(
-        "MODEL_PATH",
-        "TrainedModels"
-    )
-)
-
-
-MODEL_REGISTRY = Path(
-    os.getenv(
-        "MODEL_REGISTRY",
-        "TrainedModels/model_registry.json"
-    )
-)
-
-
-SENDER_EMAIL = os.getenv("SENDER_EMAIL")
-
-APP_PASSWORD = os.getenv("APP_PASSWORD")
+# Instantiate the settings. 
+# This single line handles loading, validating, and path conversion.
+settings = Settings()
