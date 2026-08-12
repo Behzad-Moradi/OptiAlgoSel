@@ -7,7 +7,6 @@ from collections import defaultdict
 
 
 
-
 def compute_ela_features(norm_doe, lower_bound, upper_bound, fid):
 
     feature_dict = {'function': f'test_{fid}'}
@@ -109,22 +108,21 @@ def extract_features(doe, lb, up, fid, conn):
     ela_features_test = compute_ela_features(doe, lb, up, fid)
     ela_features_test = pd.DataFrame(ela_features_test, index=[0])
 
-    cur = conn.cursor()
-    cur.execute('''SELECT fv.instance_id, fv.feature_value FROM feature_values fv
-                   JOIN problem_instances pi ON pi.instance_id = fv.instance_id
-                   JOIN problem_configs pc ON pc.config_id = pi.config_id
-                   JOIN problems p ON p.problem_id = pc.problem_id
-                   JOIN suites s ON s.suite_id = p.suite_id
-                   WHERE s.suite_name == 'BBOB'
-                   ORDER BY fv.instance_id, fv.feature_id
-                   ''')
+    with conn.cursor() as cur:
+        cur.execute('''SELECT fv.instance_id, fv.feature_value FROM feature_values fv
+                    JOIN problem_instances pi ON pi.instance_id = fv.instance_id
+                    JOIN problem_configs pc ON pc.config_id = pi.config_id
+                    JOIN problems p ON p.problem_id = pc.problem_id
+                    JOIN suites s ON s.suite_id = p.suite_id
+                    WHERE s.suite_name = 'BBOB'
+                    ORDER BY fv.instance_id, fv.feature_id
+                    ''')
+        
+        feature_values_bbob = cur.fetchall()
+        
+        cur.execute("SELECT feature_name FROM features ORDER BY feature_id")
+        feature_list = [row[0] for row in cur.fetchall()]
     
-    feature_values_bbob = cur.fetchall()
-    
-    cur.execute("SELECT feature_name FROM features ORDER BY feature_id")
-    feature_list = [row[0] for row in cur.fetchall()]
-    
-    cur.close()
 
     sel_ela_features_test = ela_features_test[feature_list]
     

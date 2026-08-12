@@ -4,6 +4,7 @@ import logging
 from API.include_routers import include_routers
 from API.logging_config import setup_logging
 #from services.database_service import create_database_schema
+from services.database_service_pg import create_database_schema_pg
 
 from API.config import settings
 
@@ -19,4 +20,6 @@ include_routers(app)
 if __name__ == "__main__":
 
     #create_database_schema(settings.DATABASE_DIR)
+    #create_database_schema_pg()
     uvicorn.run("mainapi:app", host="127.0.0.1", port=8000, reload=True)
+    

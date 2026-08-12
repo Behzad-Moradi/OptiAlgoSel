@@ -1,14 +1,17 @@
 import numpy as np
-
+from Utils.get_con_db import get_connection
 
 def validate_doe(doe, lb, ub, conn):
     
-    
-    cur = conn.cursor()
-    cur.execute("SELECT num_points, problem_dim FROM sampling_sets")
-    (num_sample_points, prob_dim) = cur.fetchone()
-    cur.close()
-    
+    with conn.cursor() as cur:
+        cur.execute("SELECT num_points, problem_dim FROM sampling_sets")
+        result = cur.fetchone()
+
+        if result is None:
+            raise ValueError("Sampling-set configuration was not found.")
+
+        num_sample_points, prob_dim = result
+        
     if not isinstance(doe, np.ndarray):
         raise TypeError("DOE must be a NumPy array.")
     

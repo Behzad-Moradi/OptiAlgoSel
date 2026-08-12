@@ -1,4 +1,5 @@
 from Utils.create_database import create_database_schema, populate_database
+from Utils.create_database_pg import create_database_schema_pg, populate_database_pg
 from Utils.train_test_models import train_test_models
 from Utils.visualisation import visualisation
 import sqlite3
@@ -90,6 +91,10 @@ def main():
     #populate_database(SUITE_LIST, PROB_DIM, UL_DIM_SMD, BBOB_LOWER_BOUND, BBOB_UPPER_BOUND, SAMPLING_SET_LIST, ALGORITHM_LIST, PERFORMANCE_METRIC_LIST, OPT_BUDGET, NUM_RUN, ELA_FEATURE_NAMES, NUM_SEED, BOOTSTRAP_RATIO, DATABASE_DIR)
     #train_test_models(NUM_FUN_BBOB, NUM_FUN_SMD, NUM_INST, PROB_DIM, DATABASE_DIR, SRC_DIR, RES_DIR, MODEL_DIR)
     #visualisation(NUM_FUN_BBOB, NUM_FUN_SMD, SRC_DIR, RES_DIR) 
+    
+    create_database_schema_pg()
+    populate_database_pg(SUITE_LIST, PROB_DIM, UL_DIM_SMD, BBOB_LOWER_BOUND, BBOB_UPPER_BOUND, SAMPLING_SET_LIST, ALGORITHM_LIST, PERFORMANCE_METRIC_LIST, OPT_BUDGET, NUM_RUN, ELA_FEATURE_NAMES, NUM_SEED, BOOTSTRAP_RATIO)
+    
     return
 
 if __name__ == "__main__":
