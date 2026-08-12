@@ -1,20 +1,19 @@
 from fastapi import APIRouter, HTTPException, Depends
-import sqlite3
+import psycopg
 from API.services.get_production_model import get_production_model
-from API.services.connect_database import get_db
+from API.services.connect_database_pg import get_db_pg
 
 router = APIRouter(prefix="/health", tags=["Health Check"])
 
 @router.get("/", description="This endpoint checks the health of the API, including database and model availability.", summary="Database and model health check")
-async def health_check(conn: sqlite3.Connection = Depends(get_db)):
+def health_check(conn: psycopg.Connection = Depends(get_db_pg)):
     
-    try:
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM algorithms LIMIT 1")
-        cur.close()
-        database_status = "connected"
-    except Exception:
-        database_status = "not connected"
+    with conn.cursor() as cur:
+        try:
+            cur.execute("SELECT * FROM algorithms LIMIT 1")
+            database_status = "connected"
+        except Exception:
+            database_status = "not connected"
 
     production_model = get_production_model()
     

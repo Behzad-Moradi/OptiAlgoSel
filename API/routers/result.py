@@ -1,13 +1,18 @@
 from fastapi import APIRouter, Path, Depends, status
-import sqlite3
-from API.services.connect_database import get_db
+import psycopg
+from API.services.connect_database_pg import get_db_pg
+from fastapi import HTTPException
 
 router = APIRouter(prefix="/result", tags=["Result"])
 
-@router.get("/{request_d}", status_code=status.HTTP_200_OK, description="This endpoint retrieves the result of a prediction request.", summary="Result of a prediction request.")
-async def get_result(request_d: int=Path(..., description="The request id of the prediction request."), conn: sqlite3.Connection = Depends(get_db)):
-    cur = conn.cursor()
-    cur.execute("SELECT predicted_algorithms FROM results WHERE request_id = ?", (request_d,))
-    result = cur.fetchone()
-    cur.close()
-    return result[0]
+@router.get("/{request_id}", status_code=status.HTTP_200_OK, description="This endpoint retrieves the result of a prediction request.", summary="Result of a prediction request.")
+def get_result(request_id: int=Path(..., description="The request id of the prediction request."), conn: psycopg.Connection = Depends(get_db_pg)):
+    
+    with conn.cursor() as cur:
+        cur.execute("SELECT predicted_algorithms FROM results WHERE request_id = %s", (request_id,))
+        result = cur.fetchone()
+    
+    if result is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No result found for request ID {request_id}.")
+
+    return {"request_id": request_id, "predicted_algorithms": result[0]}

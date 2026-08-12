@@ -15,5 +15,5 @@ response = requests.post(
     "http://localhost:8000/prediction",
     json=data
 )
-
+ 
 print(response)
