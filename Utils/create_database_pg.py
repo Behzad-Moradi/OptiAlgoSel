@@ -211,27 +211,6 @@ def create_feature_values_table():
 
 def create_database_schema_pg():
     
-    
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute("DROP TABLE IF EXISTS suites CASCADE")
-            cur.execute("DROP TABLE IF EXISTS problems CASCADE")
-            cur.execute("DROP TABLE IF EXISTS problem_configs CASCADE")
-            cur.execute("DROP TABLE IF EXISTS variable_bounds CASCADE")
-            cur.execute("DROP TABLE IF EXISTS problem_instances CASCADE")
-            cur.execute("DROP TABLE IF EXISTS sampling_sets CASCADE")
-            cur.execute("DROP TABLE IF EXISTS sampling_points CASCADE")
-            cur.execute("DROP TABLE IF EXISTS sampling_coordinates CASCADE")
-            cur.execute("DROP TABLE IF EXISTS objective_values CASCADE")
-            cur.execute("DROP TABLE IF EXISTS algorithms CASCADE")
-            cur.execute("DROP TABLE IF EXISTS performance_metrics CASCADE")
-            cur.execute("DROP TABLE IF EXISTS algorithm_performance CASCADE")
-            cur.execute("DROP TABLE IF EXISTS features CASCADE")    
-            cur.execute("DROP TABLE IF EXISTS feature_values CASCADE")
-            cur.execute("DROP TABLE IF EXISTS requests CASCADE")
-            cur.execute("DROP TABLE IF EXISTS results CASCADE")
-            
-    
     create_suites_table()
     create_problems_table()
     create_problem_configs_table()

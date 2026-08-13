@@ -6,7 +6,16 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 class Settings(BaseSettings):
+    
+    
+    
     # 1. Define fields and types (Missing fields will automatically throw a CRITICAL error)
+    DB_HOST: str = "localhost"
+    DB_PORT: int = 5432
+    DB_NAME: str
+    DB_USER: str
+    DB_PASSWORD: str
+    
     DATABASE_PATH: Path  
     MODEL_PATH: Path
     MODEL_REGISTRY: Path
