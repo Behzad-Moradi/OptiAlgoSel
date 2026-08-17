@@ -1,0 +1,157 @@
+name: OptiAlgoSel CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18
+
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: optialgosel_pg
+
+        ports:
+          - 5432:5432
+
+        options: >-
+          --health-cmd="pg_isready -U postgres -d optialgosel_pg"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+
+      # ---------------------------------------------------------
+      # 1. Checkout repository
+      # ---------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+
+      # ---------------------------------------------------------
+      # 2. Set up Python
+      # ---------------------------------------------------------
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+
+      # ---------------------------------------------------------
+      # 3. Check Python version
+      # ---------------------------------------------------------
+      - name: Check Python version
+        run: python --version
+
+
+      # ---------------------------------------------------------
+      # 4. Verify database dump
+      # ---------------------------------------------------------
+      - name: Verify database dump
+        run: |
+          ls -lh database/optialgosel_ci.dump
+          file database/optialgosel_ci.dump
+          sha256sum database/optialgosel_ci.dump
+
+
+      # ---------------------------------------------------------
+      # 5. Verify pg_restore from PostgreSQL 18
+      # ---------------------------------------------------------
+      - name: Check PostgreSQL 18 tools
+        run: |
+          docker run --rm postgres:18 pg_restore --version
+          docker run --rm postgres:18 psql --version
+
+
+      # ---------------------------------------------------------
+      # 6. Verify the dump can be read
+      # ---------------------------------------------------------
+      - name: Check database dump
+        run: |
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/work" \
+            postgres:18 \
+            pg_restore --list /work/database/optialgosel_ci.dump
+
+
+      # ---------------------------------------------------------
+      # 7. Install Python dependencies
+      # ---------------------------------------------------------
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+
+      # ---------------------------------------------------------
+      # 8. Restore PostgreSQL database
+      # ---------------------------------------------------------
+      - name: Restore database
+        env:
+          PGPASSWORD: postgres
+        run: |
+          docker run --rm \
+            --network host \
+            -v "$GITHUB_WORKSPACE:/work" \
+            -e PGPASSWORD=postgres \
+            postgres:18 \
+            pg_restore \
+              -h localhost \
+              -p 5432 \
+              -U postgres \
+              -d optialgosel_pg \
+              --no-owner \
+              --no-acl \
+              --exit-on-error \
+              /work/database/optialgosel_ci.dump
+
+
+      # ---------------------------------------------------------
+      # 9. Verify that important tables exist
+      # ---------------------------------------------------------
+      - name: Verify database
+        env:
+          PGPASSWORD: postgres
+        run: |
+          docker run --rm \
+            --network host \
+            -e PGPASSWORD=postgres \
+            postgres:18 \
+            psql \
+              -h localhost \
+              -p 5432 \
+              -U postgres \
+              -d optialgosel_pg \
+              -c "\dt"
+
+
+      # ---------------------------------------------------------
+      # 10. Run tests
+      # ---------------------------------------------------------
+      - name: Run tests
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: optialgosel_pg
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+
+          DATABASE_PATH: database/optialgosel.db
+
+          # Adjust these paths if your actual project paths differ
+          MODEL_PATH: models
+          MODEL_REGISTRY: models/registry
+
+          # Fake values for CI
+          SENDER_EMAIL: test@example.com
+          APP_PASSWORD: fake-password
+
+        run: |
+          python -m pytest
