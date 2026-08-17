@@ -56,9 +56,9 @@ jobs:
       # ---------------------------------------------------------
       - name: Verify database dump
         run: |
-          ls -lh database/optialgosel_ci.dump
-          file database/optialgosel_ci.dump
-          sha256sum database/optialgosel_ci.dump
+          ls -lh database/optialgosel_ci_small.dump
+          file database/optialgosel_ci_small.dump
+          sha256sum database/optialgosel_ci_small.dump
 
 
       # ---------------------------------------------------------
@@ -78,7 +78,7 @@ jobs:
           docker run --rm \
             -v "$GITHUB_WORKSPACE:/work" \
             postgres:18 \
-            pg_restore --list /work/database/optialgosel_ci.dump
+            pg_restore --list /work/database/optialgosel_ci_small.dump
 
 
       # ---------------------------------------------------------
@@ -110,7 +110,7 @@ jobs:
               --no-owner \
               --no-acl \
               --exit-on-error \
-              /work/database/optialgosel_ci.dump
+              /work/database/optialgosel_ci_small.dump
 
 
       # ---------------------------------------------------------
