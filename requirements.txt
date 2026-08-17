@@ -11,3 +11,6 @@ email-validator
 pflacco==1.2.2
 python-dotenv
 psycopg[binary]
+pytest
+pytes-mock
+pytest-cov
