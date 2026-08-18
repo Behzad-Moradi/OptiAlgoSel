@@ -8,24 +8,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:18
-
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: optialgosel_pg
-
-        ports:
-          - 5432:5432
-
-        options: >-
-          --health-cmd="pg_isready -U postgres -d optialgosel_pg"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -39,6 +21,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
+      - name: Start PostgreSQL
+        run: |
+          docker compose -f compose.ci.yaml up -d postgres
 
       - name: Restore database
         env:
@@ -75,50 +61,27 @@ jobs:
         run: |
           python -m pytest
 
-      - name: Build Docker image
+      - name: Start full CI stack
         run: |
-          docker build -t optialgosel-api:ci .
+          docker compose -f compose.ci.yaml up -d
 
-      - name: Create Docker network
+      - name: Show Compose status
         run: |
-          docker network create optialgosel-network
+          docker compose -f compose.ci.yaml ps
 
-      - name: Connect PostgreSQL to Docker network
+      - name: Show Compose logs
         run: |
-          POSTGRES_CONTAINER=$(docker ps -q --filter ancestor=postgres:18)
-
-          docker network connect \
-            --alias postgres \
-            optialgosel-network \
-            "$POSTGRES_CONTAINER"
-
-      - name: Run Docker container
-        run: |
-          docker run -d \
-            --name optialgosel-api \
-            --network optialgosel-network \
-            -p 8000:8000 \
-            -e DATABASE_PATH=database/optialgosel.db \
-            -e MODEL_PATH=models \
-            -e MODEL_REGISTRY=models/registry \
-            -e SENDER_EMAIL=test@example.com \
-            -e APP_PASSWORD=fake-password \
-            -e DB_HOST=postgres \
-            -e DB_PORT=5432 \
-            -e DB_NAME=optialgosel_pg \
-            -e DB_USER=postgres \
-            -e DB_PASSWORD=postgres \
-            optialgosel-api:ci
-
-          sleep 5
-          docker ps -a
-          docker logs optialgosel-api
+          docker compose -f compose.ci.yaml logs
 
       - name: Test first endpoint
         run: |
-          sleep 5
           curl --fail --show-error http://localhost:8000/
 
       - name: Test algorithms endpoint
         run: |
           curl --fail --show-error http://localhost:8000/algorithms/
+
+      - name: Stop CI stack
+        if: always()
+        run: |
+          docker compose -f compose.ci.yaml down -v
