@@ -79,17 +79,31 @@ jobs:
         run: |
           docker build -t optialgosel-api:ci .
 
+      - name: Create Docker network
+        run: |
+          docker network create optialgosel-network
+
+      - name: Connect PostgreSQL to Docker network
+        run: |
+          POSTGRES_CONTAINER=$(docker ps -q --filter ancestor=postgres:18)
+
+          docker network connect \
+            --alias postgres \
+            optialgosel-network \
+            "$POSTGRES_CONTAINER"
+
       - name: Run Docker container
         run: |
           docker run -d \
             --name optialgosel-api \
+            --network optialgosel-network \
             -p 8000:8000 \
             -e DATABASE_PATH=database/optialgosel.db \
             -e MODEL_PATH=models \
             -e MODEL_REGISTRY=models/registry \
             -e SENDER_EMAIL=test@example.com \
             -e APP_PASSWORD=fake-password \
-            -e DB_HOST=host.docker.internal \
+            -e DB_HOST=postgres \
             -e DB_PORT=5432 \
             -e DB_NAME=optialgosel_pg \
             -e DB_USER=postgres \
