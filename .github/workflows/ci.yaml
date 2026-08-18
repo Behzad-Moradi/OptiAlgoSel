@@ -78,3 +78,7 @@ jobs:
       - name: Build Docker image
         run: |
           docker build -t optialgosel-api:ci .
+
+      - name: Run Docker container
+        run: |
+          docker run -d --name optialgosel-api -p 8000:8000 optialgosel-api:ci
