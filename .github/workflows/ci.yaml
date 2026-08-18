@@ -66,16 +66,15 @@ jobs:
           DB_NAME: optialgosel_pg
           DB_USER: postgres
           DB_PASSWORD: postgres
-
           DATABASE_PATH: database/optialgosel.db
-
-          # Adjust these paths if your actual project paths differ
           MODEL_PATH: models
           MODEL_REGISTRY: models/registry
-
-          # Fake values for CI
           SENDER_EMAIL: test@example.com
           APP_PASSWORD: fake-password
 
         run: |
           python -m pytest
+
+      - name: Build Docker image
+        run: |
+          docker build -t optialgosel-api:ci .

@@ -11,6 +11,7 @@ __pycache__
 *.ipynb_checkpoints
 
 README.md
-Rsources/
+Resources/
 Results/
 DataBase/
+database/*.dump

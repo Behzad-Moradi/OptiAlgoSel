@@ -18,3 +18,5 @@ __pycache__/
 
 # Ignore the dataset generated on SPARTAN
 Resources/
+
+database/optialgosel_ci.dump
