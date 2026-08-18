@@ -7,39 +7,32 @@ on:
 jobs:
   test-and-verify:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4 # Copy code to the GitHub server
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5 # Install Python on the server
-      with:
-        python-version: '3.11'
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install flake8 bandit pytest-cov # Extra quality tools
 
-    - name: Run API Tests
-      run: |
-        python -m pytest
+      # 1. STYLE CHECK
+      - name: Lint with flake8
+        run: |
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 
-  # --- THE CD PHASE (Continuous Deployment) ---
-  deploy-api:
-    needs: test-and-verify # Only deploy if all API tests pass
-    runs-on: ubuntu-latest
+      # 2. SECURITY CHECK
+      - name: Security scan with Bandit
+        run: |
+          bandit -r ./API
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Package and Deploy REST API
-      run: |
-        echo "Packaging Python application..."
-        # (Optional: This is where you might build a Docker container container image)
-        
-        echo "Deploying to cloud platform..."
-        # In a real setup, this command sends your code live to AWS, Heroku, or Google Cloud
-        echo "API successfully deployed and live!"
+      # 3. RUN TESTS + MEASURE COVERAGE
+      - name: Run API Tests with Coverage
+        run: |
+          python -m pytest --cov=API Tests/
