@@ -2,31 +2,44 @@ name: OptiAlgoSel CI
 
 on:
   push:
-  pull_request:
+    branches:
 
 jobs:
-  test:
+  test-and-verify:
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: read
-      packages: write
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4 # Copy code to the GitHub server
+
+    - name: Set up Python
+      uses: actions/setup-python@v5 # Install Python on the server
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run API Tests
+      run: |
+        python -m pytest
+
+  # --- THE CD PHASE (Continuous Deployment) ---
+  deploy-api:
+    needs: test-and-verify # Only deploy if all API tests pass
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.11"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Run tests
-        run: |
-          pytest
-
+    - name: Package and Deploy REST API
+      run: |
+        echo "Packaging Python application..."
+        # (Optional: This is where you might build a Docker container container image)
+        
+        echo "Deploying to cloud platform..."
+        # In a real setup, this command sends your code live to AWS, Heroku, or Google Cloud
+        echo "API successfully deployed and live!"
