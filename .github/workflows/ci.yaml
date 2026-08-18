@@ -25,11 +25,14 @@ jobs:
       - name: Start PostgreSQL
         run: |
           docker compose -f compose.ci.yaml up -d postgres
+
           echo "Waiting for PostgreSQL..."
+
           until docker compose -f compose.ci.yaml exec -T postgres \
             pg_isready -U postgres -d optialgosel_pg; do
             sleep 2
           done
+
           echo "PostgreSQL is ready."
 
       - name: Restore database
@@ -63,7 +66,6 @@ jobs:
           MODEL_REGISTRY: models/registry
           SENDER_EMAIL: test@example.com
           APP_PASSWORD: fake-password
-
         run: |
           python -m pytest
 
@@ -71,23 +73,27 @@ jobs:
         run: |
           docker compose -f compose.ci.yaml up -d
 
-      - name: Show Compose status
-        run: |
-          docker compose -f compose.ci.yaml ps
-
-      - name: Show Compose logs
-        run: |
-          docker compose -f compose.ci.yaml logs
-
-      - name: Check CI stack
-        run: |
-          docker compose -f compose.ci.yaml ps
-          docker compose -f compose.ci.yaml logs --tail=100 api
-      
       - name: Wait for API
         run: |
-          sleep 10
-          docker compose -f compose.ci.yaml ps
+          echo "Waiting for API..."
+
+          until curl --silent --fail http://localhost:8000/ > /dev/null; do
+            sleep 2
+          done
+
+          echo "API is ready."
+
+      - name: Test welcome endpoint
+        run: |
+          curl --fail --show-error http://localhost:8000/
+
+      - name: Test algorithms endpoint
+        run: |
+          curl --fail --show-error http://localhost:8000/algorithms/
+
+      - name: Show API logs
+        if: always()
+        run: |
           docker compose -f compose.ci.yaml logs --tail=100 api
 
       - name: Stop CI stack
