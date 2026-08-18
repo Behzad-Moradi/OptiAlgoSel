@@ -1,10 +1,13 @@
 from fastapi.testclient import TestClient
 from API.mainapi import app
+import pytest
 
-client = TestClient(app)
+@pytest.fixture
+def client():
+    return TestClient(app)
 
 
-def test_get_models(mocker):
+def test_get_models(mocker, client):
 
     mock_model_registry = [
                     {

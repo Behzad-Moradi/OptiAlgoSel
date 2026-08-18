@@ -1,11 +1,13 @@
 from fastapi.testclient import TestClient
 from API.mainapi import app
 from API.services.connect_database_pg import get_db_pg
+import pytest
 
-client = TestClient(app)
+@pytest.fixture
+def client():
+    return TestClient(app)
 
-
-def test_get_result(mocker):
+def test_get_result(mocker, client):
 
     predicted_algorithms = "CMAES, Covariance Matrix Adaptation Evolution Strategy"
     request_id = 1
@@ -30,7 +32,7 @@ def test_get_result(mocker):
     app.dependency_overrides.clear()
     
 
-def test_get_result_not_found(mocker):
+def test_get_result_not_found(mocker, client):
 
     request_id = 999
 
