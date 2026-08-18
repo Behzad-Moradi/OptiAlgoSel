@@ -104,3 +104,7 @@ jobs:
         run: |
           sleep 5
           curl --fail --show-error http://localhost:8000/
+
+      - name: Test algorithms endpoint
+        run: |
+          curl --fail --show-error http://localhost:8000/algorithms/
