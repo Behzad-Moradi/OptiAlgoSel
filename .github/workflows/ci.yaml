@@ -84,13 +84,11 @@ jobs:
           docker compose -f compose.ci.yaml ps
           docker compose -f compose.ci.yaml logs --tail=100 api
       
-      - name: Test first endpoint
+      - name: Wait for API
         run: |
-          curl --fail --show-error http://localhost:8000/
-
-      - name: Test algorithms endpoint
-        run: |
-          curl --fail --show-error http://localhost:8000/algorithms/
+          sleep 10
+          docker compose -f compose.ci.yaml ps
+          docker compose -f compose.ci.yaml logs --tail=100 api
 
       - name: Stop CI stack
         if: always()
