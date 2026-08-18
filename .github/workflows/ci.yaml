@@ -84,6 +84,11 @@ jobs:
           docker run -d \
             --name optialgosel-api \
             -p 8000:8000 \
+            -e DATABASE_PATH=database/optialgosel.db \
+            -e MODEL_PATH=models \
+            -e MODEL_REGISTRY=models/registry \
+            -e SENDER_EMAIL=test@example.com \
+            -e APP_PASSWORD=fake-password \
             -e DB_HOST=host.docker.internal \
             -e DB_PORT=5432 \
             -e DB_NAME=optialgosel_pg \
