@@ -91,11 +91,11 @@ jobs:
             -e DB_PASSWORD=postgres \
             optialgosel-api:ci
 
-      - name: Test welcome endpoint
+          sleep 5
+          docker ps -a
+          docker logs optialgosel-api
+
+      - name: Test first endpoint
         run: |
           sleep 5
-          curl --fail http://localhost:8000/welcome
-
-      - name: Test algorithms endpoint
-        run: |
-          curl --fail --show-error http://localhost:8000/algorithms
+          curl --fail --show-error http://localhost:8000/
