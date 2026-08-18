@@ -25,6 +25,12 @@ jobs:
       - name: Start PostgreSQL
         run: |
           docker compose -f compose.ci.yaml up -d postgres
+          echo "Waiting for PostgreSQL..."
+          until docker compose -f compose.ci.yaml exec -T postgres \
+            pg_isready -U postgres -d optialgosel_pg; do
+            sleep 2
+          done
+          echo "PostgreSQL is ready."
 
       - name: Restore database
         env:
