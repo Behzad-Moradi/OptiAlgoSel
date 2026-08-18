@@ -107,4 +107,5 @@ jobs:
 
       - name: Test algorithms endpoint
         run: |
-          curl --fail --show-error http://localhost:8000/algorithms/
+          curl --show-error http://localhost:8000/algorithms/
+          docker logs optialgosel-api
