@@ -82,7 +82,7 @@ jobs:
       - name: Check CI stack
         run: |
           docker compose -f compose.ci.yaml ps
-          docker compose -f compose.ci.yaml logs api
+          docker compose -f compose.ci.yaml logs --tail=100 api
       
       - name: Test first endpoint
         run: |
