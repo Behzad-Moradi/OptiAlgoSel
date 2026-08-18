@@ -81,4 +81,21 @@ jobs:
 
       - name: Run Docker container
         run: |
-          docker run -d --name optialgosel-api -p 8000:8000 optialgosel-api:ci
+          docker run -d \
+            --name optialgosel-api \
+            -p 8000:8000 \
+            -e DB_HOST=host.docker.internal \
+            -e DB_PORT=5432 \
+            -e DB_NAME=optialgosel_pg \
+            -e DB_USER=postgres \
+            -e DB_PASSWORD=postgres \
+            optialgosel-api:ci
+
+      - name: Test welcome endpoint
+        run: |
+          sleep 5
+          curl --fail http://localhost:8000/welcome
+
+      - name: Test algorithms endpoint
+        run: |
+          curl --fail --show-error http://localhost:8000/algorithms
