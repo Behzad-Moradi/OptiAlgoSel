@@ -31,12 +31,12 @@ jobs:
           PGPASSWORD: postgres
         run: |
           docker run --rm \
-            --network host \
+            --network optialgosel_default \
             -v "$GITHUB_WORKSPACE:/work" \
             -e PGPASSWORD=postgres \
             postgres:18 \
             pg_restore \
-              -h localhost \
+              -h postgres \
               -p 5432 \
               -U postgres \
               -d optialgosel_pg \
