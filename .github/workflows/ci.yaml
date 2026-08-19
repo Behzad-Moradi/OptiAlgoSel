@@ -30,7 +30,7 @@ jobs:
       # 2. SECURITY CHECK
       - name: Security scan with Bandit
         run: |
-          bandit -r ./API
+          bandit -r .
 
       # 3. RUN TESTS + MEASURE COVERAGE
       - name: Run API Tests with Coverage
