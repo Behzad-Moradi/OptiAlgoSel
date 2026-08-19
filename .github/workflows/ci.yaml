@@ -71,6 +71,8 @@ jobs:
           python -m pytest
 
       - name: Start full CI stack
+        env:
+          DB_PASSWORD: postgres
         run: |
           docker compose -f compose.ci.yaml up -d
 
