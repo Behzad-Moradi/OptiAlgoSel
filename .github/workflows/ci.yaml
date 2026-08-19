@@ -62,7 +62,7 @@ jobs:
 
       - name: Start full CI stack
 
-        environment:
+        env:
           DB_HOST: localhost
           DB_PORT: 5432
           DB_NAME: optialgosel_pg
