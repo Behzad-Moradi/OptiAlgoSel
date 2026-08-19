@@ -20,8 +20,12 @@ services:
   api:
     image: ghcr.io/behzad-moradi/optialgosel-github:1.0
 
-    env_file:
-      - .env.docker
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: optialgosel_pg
+      DB_USER: postgres
+      DB_PASSWORD: postgres
 
     ports:
       - "8000:8000"
