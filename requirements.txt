@@ -15,3 +15,5 @@ pytest
 pytest-mock
 pytest-cov
 httpx2
+flake8
+bandit
