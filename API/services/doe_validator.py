@@ -8,7 +8,7 @@ def validate_doe(doe, lb, ub, conn):
         result = cur.fetchone()
 
         if result is None:
-            raise ValueError("Sampling-set configuration was not found.")
+            raise alueError("Sampling-set configuration was not found.")
 
         num_sample_points, prob_dim = result
         
