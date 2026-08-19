@@ -19,7 +19,7 @@ services:
     image: ghcr.io/behzad-moradi/optialgosel-github:1.0
 
     environment:
-      DB_HOST: localhost
+      DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: optialgosel_pg
       DB_USER: postgres
