@@ -17,7 +17,7 @@ services:
       retries: 5
 
   api:
-    image: ghcr.io/behzad-moradi/optialgosel:latest
+    image: ghcr.io/behzad-moradi/optialgosel:1.0
 
     env_file:
       - .env.docker
