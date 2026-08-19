@@ -75,12 +75,22 @@ jobs:
           docker compose -f compose.ci.yaml up -d
 
       - name: Wait for API
-        run: |
+
+        run: 
           echo "Waiting for API..."
-          until curl --silent --fail http://localhost:8000/ > /dev/null; do
+          for i in {1..30}; do
+            if curl --silent --fail http://localhost:8000/ > /dev/null; then
+              echo "API is ready."
+              exit 0
+            fi
+            
+            echo "API not ready yet..."
             sleep 2
           done
-          echo "API is ready."
+          
+          echo "API failed to start. Showing logs:"
+          docker compose -f compose.ci.yaml logs api
+          exit 1
 
       - name: Test welcome endpoint
         run: |
