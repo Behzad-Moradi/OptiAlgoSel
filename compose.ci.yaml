@@ -22,10 +22,6 @@ services:
     env_file:
       - .env.docker
 
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-
     ports:
       - "8000:8000"
 
