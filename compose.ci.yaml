@@ -18,6 +18,18 @@ services:
   api:
     image: ghcr.io/behzad-moradi/optialgosel-github:1.0
 
+    environment:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_NAME: optialgosel_pg
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DATABASE_PATH: database/optialgosel.db
+      MODEL_PATH: models
+      MODEL_REGISTRY: models/registry
+      SENDER_EMAIL: test@example.com
+      APP_PASSWORD: fake-password
+
     ports:
       - "8000:8000"
 
