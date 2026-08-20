@@ -37,8 +37,6 @@ jobs:
           echo "PostgreSQL is ready."
 
       - name: Restore database
-        env:
-          PGPASSWORD: postgres
         run: |
           docker run --rm \
             --network optialgosel_default \
