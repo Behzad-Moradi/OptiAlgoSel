@@ -54,6 +54,17 @@ jobs:
               /work/database/optialgosel_ci_small.dump
 
       - name: Run tests
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: optialgosel_pg
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          DATABASE_PATH: database/optialgosel.db
+          MODEL_PATH: models
+          MODEL_REGISTRY: models/registry
+          SENDER_EMAIL: test@example.com
+          APP_PASSWORD: fake-password
         
         run: |
           python -m pytest
