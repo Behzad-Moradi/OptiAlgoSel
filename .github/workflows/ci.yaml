@@ -5,12 +5,15 @@ on:
   pull_request:
 
 jobs:
+
+  # ============================================================
+  # JOB 1: TEST
+  # ============================================================
   test:
     runs-on: ubuntu-latest
 
     permissions:
       contents: read
-      packages: write
 
     steps:
       - name: Checkout repository
@@ -35,6 +38,7 @@ jobs:
             pg_isready -U postgres -d optialgosel_pg; do
             sleep 2
           done
+
           echo "PostgreSQL is ready."
 
       - name: Restore database
@@ -66,29 +70,28 @@ jobs:
           MODEL_REGISTRY: models/registry
           SENDER_EMAIL: test@example.com
           APP_PASSWORD: fake-password
-        
+
         run: |
           python -m pytest
 
       - name: Start full CI stack
-        
         run: |
           docker compose -f compose.ci.yaml up -d
 
       - name: Wait for API
-
         run: |
           echo "Waiting for API..."
+
           for i in {1..30}; do
             if curl --silent --fail http://localhost:8000/ > /dev/null; then
               echo "API is ready."
               exit 0
             fi
-            
+
             echo "API not ready yet..."
             sleep 2
           done
-          
+
           echo "API failed to start. Showing logs:"
           docker compose -f compose.ci.yaml logs api
           exit 1
@@ -100,6 +103,32 @@ jobs:
       - name: Test algorithms endpoint
         run: |
           curl --fail --show-error http://localhost:8000/algorithms/
+
+      - name: Show API logs
+        if: always()
+        run: |
+          docker compose -f compose.ci.yaml logs --tail=100 api
+
+      - name: Stop CI stack
+        if: always()
+        run: |
+          docker compose -f compose.ci.yaml down -v
+
+
+  # ============================================================
+  # JOB 2: BUILD AND PUSH DOCKER IMAGE
+  # ============================================================
+  docker-image:
+    needs: test
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -121,13 +150,3 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: ghcr.io/behzad-moradi/optialgosel:latest
-      
-      - name: Show API logs
-        if: always()
-        run: |
-          docker compose -f compose.ci.yaml logs --tail=100 api
-
-      - name: Stop CI stack
-        if: always()
-        run: |
-          docker compose -f compose.ci.yaml down -v
