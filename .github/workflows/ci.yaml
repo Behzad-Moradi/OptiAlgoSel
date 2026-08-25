@@ -12,7 +12,6 @@ jobs:
   # JOB 2: BUILD AND PUSH DOCKER IMAGE
   # ============================================================
   docker-image:
-    needs: test
     runs-on: ubuntu-latest
 
     permissions:
