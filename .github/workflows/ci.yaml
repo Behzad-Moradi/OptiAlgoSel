@@ -6,17 +6,19 @@ on:
 
 jobs:
 
-  deploy-test:
-    runs-on: ubuntu-latest
+  deploy:
 
-    steps:
-      - name: Test SSH connection
-        uses: appleboy/ssh-action@v1.2.2
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-          script: |
-            echo "Connected to EC2!"
-            hostname
-            docker --version
+  needs: docker-image
+  runs-on: ubuntu-latest
+  steps:
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@v1.2.2
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+        script: |
+          cd ~/optialgosel
+          docker compose -f compose.production.rds.yaml pull api
+          docker compose -f compose.production.rds.yaml up -d api
+          docker compose -f compose.production.rds.yaml ps
