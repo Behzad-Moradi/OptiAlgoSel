@@ -1,49 +1,14 @@
-name: OptiAlgoSel CI
+deploy-test:
+  runs-on: ubuntu-latest
 
-on:
-  push:
-  pull_request:
-
-jobs:
-
-
-
-  # ============================================================
-  # JOB 2: BUILD AND PUSH DOCKER IMAGE
-  # ============================================================
-  docker-image:
-    runs-on: ubuntu-latest
-
-    permissions:
-      contents: read
-      id-token: write
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: arn:aws:iam::655103423443:role/OptiAlgoSelGitHubActionsRole
-          aws-region: us-east-1   # public ECR auth is always us-east-1
-
-      - name: Log in to Amazon ECR Public
-        uses: aws-actions/amazon-ecr-login@v2
-        with:
-          registry-type: public
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            public.ecr.aws/b4i7j1y4/optialgosel:1.2
+  steps:
+    - name: Test SSH connection
+      uses: appleboy/ssh-action@v1.2.2
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+        script: |
+          echo "Connected to EC2!"
+          hostname
+          docker --version
