@@ -20,7 +20,7 @@ jobs:
           echo "Ref: $GITHUB_REF"
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::655103423443:role/OptiAlgoSelGitHubActionsRole
           aws-region: ap-southeast-2
