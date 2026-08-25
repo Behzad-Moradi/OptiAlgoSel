@@ -70,6 +70,8 @@ jobs:
           MODEL_REGISTRY: models/registry
           SENDER_EMAIL: test@example.com
           APP_PASSWORD: fake-password
+          AWS_DEFAULT_REGION: ap-southeast-2
+          
 
         run: |
           python -m pytest
@@ -124,11 +126,17 @@ jobs:
 
     permissions:
       contents: read
-      packages: write
+      id-token: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::655103423443:role/OptiAlgoSelGitHubActionsRole
+          aws-region: ap-southeast-2
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
