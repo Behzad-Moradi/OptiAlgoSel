@@ -17,9 +17,6 @@ jobs:
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           script: |
             cd ~/optialgosel
-
             docker compose -f compose.production.rds.yaml pull api
-
             docker compose -f compose.production.rds.yaml up -d api
-
             docker compose -f compose.production.rds.yaml ps
