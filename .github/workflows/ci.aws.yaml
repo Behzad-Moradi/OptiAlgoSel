@@ -1,0 +1,158 @@
+name: OptiAlgoSel CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+
+  # ============================================================
+  # JOB 1: TEST
+  # ============================================================
+  test:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Start PostgreSQL
+        run: |
+          docker compose -f compose.ci.yaml up -d postgres
+
+          echo "Waiting for PostgreSQL..."
+          until docker compose -f compose.ci.yaml exec -T postgres \
+            pg_isready -U postgres -d optialgosel_pg; do
+            sleep 2
+          done
+
+          echo "PostgreSQL is ready."
+
+      - name: Restore database
+        run: |
+          docker run --rm \
+            --network optialgosel_default \
+            -v "$GITHUB_WORKSPACE:/work" \
+            -e PGPASSWORD=postgres \
+            postgres:18 \
+            pg_restore \
+              -h postgres \
+              -p 5432 \
+              -U postgres \
+              -d optialgosel_pg \
+              --no-owner \
+              --no-acl \
+              --exit-on-error \
+              /work/database/optialgosel_ci_small.dump
+
+      - name: Run tests
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: optialgosel_pg
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          DATABASE_PATH: database/optialgosel.db
+          MODEL_PATH: models
+          MODEL_REGISTRY: models/registry
+          SENDER_EMAIL: test@example.com
+          APP_PASSWORD: fake-password
+
+        run: |
+          python -m pytest
+
+      - name: Start full CI stack
+        run: |
+          docker compose -f compose.ci.yaml up -d
+
+      - name: Wait for API
+        run: |
+          echo "Waiting for API..."
+
+          for i in {1..30}; do
+            if curl --silent --fail http://localhost:8000/ > /dev/null; then
+              echo "API is ready."
+              exit 0
+            fi
+
+            echo "API not ready yet..."
+            sleep 2
+          done
+
+          echo "API failed to start. Showing logs:"
+          docker compose -f compose.ci.yaml logs api
+          exit 1
+
+      - name: Test welcome endpoint
+        run: |
+          curl --fail --show-error http://localhost:8000/
+
+      - name: Test algorithms endpoint
+        run: |
+          curl --fail --show-error http://localhost:8000/algorithms/
+
+      - name: Show API logs
+        if: always()
+        run: |
+          docker compose -f compose.ci.yaml logs --tail=100 api
+
+      - name: Stop CI stack
+        if: always()
+        run: |
+          docker compose -f compose.ci.yaml down -v
+
+
+  # ============================================================
+  # JOB 2: BUILD AND PUSH DOCKER IMAGE
+  # ============================================================
+  docker-image:
+    needs: test
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::655103423443:role/OptiAlgoSelGitHubActionsRole
+          aws-region: ap-southeast-2
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ghcr.io/behzad-moradi/optialgosel:latest

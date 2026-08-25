@@ -1,28 +1,48 @@
 services:
-  api:
-    image: ghcr.io/behzad-moradi/optialgosel:latest
-    container_name: optialgosel_api_prod
 
-    # Production values are securely pulled from the cloud environment, NOT typed here
+  postgres:
+    image: postgres:18
+
     environment:
-      MODEL_PATH: /app/models
-      MODEL_REGISTRY: /app/models/registry
-      
-      # The API points to your external cloud database location
-      DB_HOST: ${PROD_DB_HOST}     # e.g., ://aws.com
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: optialgosel_pg
+
+    volumes:
+      - postgres_data:/var/lib/postgresql
+
+    ports:
+      - "5432:5432"
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d optialgosel_pg"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    image: public.ecr.aws/b4i7j1y4/optialgosel:1.0
+
+    environment:
+      DB_HOST: postgres
       DB_PORT: 5432
-      DB_NAME: ${PROD_DB_NAME}
-      DB_USER: ${PROD_DB_USER}
-      DB_PASSWORD: ${PROD_DB_PASSWORD}
-      
-      SENDER_EMAIL: ${PROD_SENDER_EMAIL}
-      APP_PASSWORD: ${PROD_APP_PASSWORD}
+      DB_NAME: optialgosel_pg
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+
+      DATABASE_PATH: database/optialgosel.db
+      MODEL_PATH: TrainedModels
+      MODEL_REGISTRY: TrainedModels/model_registry.json
+
+      SENDER_EMAIL: test@example.com
+      APP_PASSWORD: fake-password
 
     ports:
       - "8000:8000"
 
-    # Always restart the container if the cloud server reboots or if the app crashes
-    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
 
-    # Restrict permissions inside the production container for security
-    read_only: false
+volumes:
+  postgres_data:
