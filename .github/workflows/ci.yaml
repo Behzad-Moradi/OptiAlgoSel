@@ -1,22 +1,270 @@
-name: OptiAlgoSel CD Test
+name: OptiAlgoSel CI/CD
 
 on:
   push:
+  pull_request:
 
 jobs:
 
+  # ============================================================
+  # JOB 0: GENERATE IMAGE VERSION
+  # ============================================================
+  version:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    outputs:
+      image_tag: ${{ steps.version.outputs.image_tag }}
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::655103423443:role/OptiAlgoSelGitHubActionsRole
+          aws-region: us-east-1
+
+      - name: Calculate next image version
+        id: version
+        run: |
+          echo "Checking existing ECR images..."
+
+          LATEST_VERSION=$(aws ecr-public describe-images \
+            --repository-name optialgosel \
+            --region us-east-1 \
+            --query 'sort_by(imageDetails[?imageTags[0] != `null`], &imageTags[0])[-1].imageTags[0]' \
+            --output text)
+
+          echo "Latest version: $LATEST_VERSION"
+
+          if [[ "$LATEST_VERSION" == "None" || -z "$LATEST_VERSION" ]]; then
+            NEW_VERSION="1.0"
+          else
+            MAJOR=$(echo "$LATEST_VERSION" | cut -d. -f1)
+            MINOR=$(echo "$LATEST_VERSION" | cut -d. -f2)
+
+            NEW_MINOR=$((MINOR + 1))
+
+            NEW_VERSION="${MAJOR}.${NEW_MINOR}"
+          fi
+
+          echo "New version: $NEW_VERSION"
+
+          echo "image_tag=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+
+
+  # ============================================================
+  # JOB 1: TEST
+  # ============================================================
+  test:
+    needs: version
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Start PostgreSQL
+        run: |
+          docker compose -f compose.ci.yaml up -d postgres
+
+          echo "Waiting for PostgreSQL..."
+
+          until docker compose -f compose.ci.yaml exec -T postgres \
+            pg_isready -U postgres -d optialgosel_pg; do
+            sleep 2
+          done
+
+          echo "PostgreSQL is ready."
+
+      - name: Restore database
+        run: |
+          docker run --rm \
+            --network optialgosel_default \
+            -v "$GITHUB_WORKSPACE:/work" \
+            -e PGPASSWORD=postgres \
+            postgres:18 \
+            pg_restore \
+              -h postgres \
+              -p 5432 \
+              -U postgres \
+              -d optialgosel_pg \
+              --no-owner \
+              --no-acl \
+              --exit-on-error \
+              /work/database/optialgosel_ci_small.dump
+
+      - name: Run tests
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: optialgosel_pg
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          DATABASE_PATH: database/optialgosel.db
+          MODEL_PATH: models
+          MODEL_REGISTRY: models/registry
+          SENDER_EMAIL: test@example.com
+          APP_PASSWORD: fake-password
+          AWS_DEFAULT_REGION: ap-southeast-2
+
+        run: |
+          python -m pytest
+
+      - name: Start full CI stack
+        run: |
+          docker compose -f compose.ci.yaml up -d
+
+      - name: Wait for API
+        run: |
+          echo "Waiting for API..."
+
+          for i in {1..30}; do
+            if curl --silent --fail http://localhost:8000/ > /dev/null; then
+              echo "API is ready."
+              exit 0
+            fi
+
+            echo "API not ready yet..."
+            sleep 2
+          done
+
+          echo "API failed to start. Showing logs:"
+          docker compose -f compose.ci.yaml logs api
+          exit 1
+
+      - name: Test welcome endpoint
+        run: |
+          curl --fail --show-error http://localhost:8000/
+
+      - name: Test algorithms endpoint
+        run: |
+          curl --fail --show-error http://localhost:8000/algorithms/
+
+      - name: Show API logs
+        if: always()
+        run: |
+          docker compose -f compose.ci.yaml logs --tail=100 api
+
+      - name: Stop CI stack
+        if: always()
+        run: |
+          docker compose -f compose.ci.yaml down -v
+
+
+  # ============================================================
+  # JOB 2: BUILD AND PUSH DOCKER IMAGE
+  # ============================================================
+  docker-image:
+    needs:
+      - version
+      - test
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::655103423443:role/OptiAlgoSelGitHubActionsRole
+          aws-region: us-east-1
+
+      - name: Log in to Amazon ECR Public
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registry-type: public
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64,linux/arm64
+
+          tags: |
+            public.ecr.aws/b4i7j1y4/optialgosel:${{ needs.version.outputs.image_tag }}
+
+
+  # ============================================================
+  # JOB 3: DEPLOY TO EC2
+  # ============================================================
   deploy:
+    needs:
+      - version
+      - docker-image
+
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+
           script: |
+
             cd ~/optialgosel
-            docker compose -f compose.production.rds.yaml pull api
-            docker compose -f compose.production.rds.yaml up -d api
-            docker compose -f compose.production.rds.yaml ps
+
+            echo "Logging in to Amazon ECR Public..."
+
+            aws ecr-public get-login-password \
+              --region us-east-1 | \
+              docker login \
+                --username AWS \
+                --password-stdin public.ecr.aws
+
+            echo "Pulling image..."
+
+            docker pull \
+              public.ecr.aws/b4i7j1y4/optialgosel:${{ needs.version.outputs.image_tag }}
+
+            echo "Starting API..."
+
+            IMAGE_TAG=${{ needs.version.outputs.image_tag }} \
+              docker compose \
+                -f compose.production.rds.yaml \
+                up -d api
+
+            echo "Deployment status:"
+
+            docker compose \
+              -f compose.production.rds.yaml \
+              ps
+
+            echo "Running image:"
+
+            docker inspect optialgosel-api-1 \
+              --format '{{.Config.Image}}'
