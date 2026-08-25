@@ -1,24 +1,38 @@
-name: SSH Test
-
+name: OptiAlgoSel CI
 
 on:
   push:
+  pull_request:
 
 jobs:
 
-  deploy:
+  docker-image:
+    runs-on: ubuntu-latest
 
-  needs: docker-image
-  runs-on: ubuntu-latest
-  steps:
-    - name: Deploy to EC2
-      uses: appleboy/ssh-action@v1.2.2
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USER }}
-        key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-        script: |
-          cd ~/optialgosel
-          docker compose -f compose.production.rds.yaml pull api
-          docker compose -f compose.production.rds.yaml up -d api
-          docker compose -f compose.production.rds.yaml ps
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      # your existing docker-image steps...
+
+
+  deploy:
+    needs: docker-image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/optialgosel
+
+            docker compose -f compose.production.rds.yaml pull api
+
+            docker compose -f compose.production.rds.yaml up -d api
+
+            docker compose -f compose.production.rds.yaml ps
