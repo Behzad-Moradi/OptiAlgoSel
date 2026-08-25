@@ -1,24 +1,11 @@
-name: OptiAlgoSel CI
+name: OptiAlgoSel CD Test
 
 on:
   push:
-  pull_request:
 
 jobs:
 
-  docker-image:
-    runs-on: ubuntu-latest
-
-    permissions:
-      contents: read
-      id-token: write
-
-    steps:
-      # your existing docker-image steps...
-
-
   deploy:
-    needs: docker-image
     runs-on: ubuntu-latest
 
     steps:
