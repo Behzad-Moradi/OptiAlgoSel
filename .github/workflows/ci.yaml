@@ -47,7 +47,7 @@ jobs:
 
             NEW_MINOR=$((MINOR + 1))
 
-            NEW_VERSION="${MAJOR}.${NEW_MINOR}"
+            NEW_VERSION=LATEST_VERSION
           fi
 
           echo "New version: $NEW_VERSION"
