@@ -1,11 +1,14 @@
 from fastapi.testclient import TestClient
 from API.mainapi import app
 from API.services.connect_database_pg import get_db_pg
+import pytest
 
-client = TestClient(app)
+@pytest.fixture
+def client():
+    return TestClient(app)
 
 
-def test_get_algorithms(mocker):
+def test_get_algorithms(mocker, client):
 
     algorithms = [{'algorithm_name': 'CMAES', 'algorithm_description': 'Covariance Matrix Adaptation Evolution Strategy'}, {'algorithm_name': 'ES', 'algorithm_description': 'Evolution Strategy'}, {'algorithm_name': 'GA', 'algorithm_description': 'Genetic Algorithm'}, {'algorithm_name': 'DE', 'algorithm_description': 'Differential Evolution'}, {'algorithm_name': 'PSO', 'algorithm_description': 'Particle Swarm Optimization'}, {'algorithm_name': 'NM', 'algorithm_description': 'Nelder-Mead'}, {'algorithm_name': 'PS', 'algorithm_description': 'Pattern Search'}]
 

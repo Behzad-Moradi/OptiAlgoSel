@@ -9,6 +9,8 @@ __pycache__/
 
 # Ignore virtual environments
 .venv/
+.env
+.env.docker
 
 # Ignore macOS files
 .DS_Store
@@ -18,3 +20,5 @@ __pycache__/
 
 # Ignore the dataset generated on SPARTAN
 Resources/
+
+database/optialgosel_ci.dump

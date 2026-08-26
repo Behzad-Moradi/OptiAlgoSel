@@ -1,11 +1,14 @@
 from fastapi.testclient import TestClient
 from API.mainapi import app
 from API.services.connect_database_pg import get_db_pg
+import pytest
 
-client = TestClient(app)
+@pytest.fixture
+def client():
+    return TestClient(app)
 
 
-def test_health_check(mocker):
+def test_health_check(mocker, client):
 
     mock_conn = mocker.MagicMock()
     mock_cursor = mock_conn.cursor.return_value

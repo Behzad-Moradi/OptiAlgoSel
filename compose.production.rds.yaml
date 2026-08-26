@@ -1,0 +1,22 @@
+services:
+
+  api:
+    image: public.ecr.aws/b4i7j1y4/optialgosel:${IMAGE_TAG}
+
+    environment:
+      DB_HOST: optialgosel-pg.cdyyuaao0rcx.ap-southeast-2.rds.amazonaws.com
+      DB_PORT: 5432
+      DB_NAME: optialgosel_pg
+
+      DATABASE_PATH: database/optialgosel.db
+      MODEL_PATH: TrainedModels
+      MODEL_REGISTRY: TrainedModels/model_registry.json
+
+      SENDER_EMAIL: test@example.com
+      APP_PASSWORD: fake-password
+
+      ENVIRONMENT: production
+      AWS_DEFAULT_REGION: ap-southeast-2
+
+    ports:
+      - "8000:8000"

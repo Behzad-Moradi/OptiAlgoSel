@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: optialgosel_postgres_dev
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: optialgosel_pg
+
+    ports:
+      - "5433:5432" # Maps to 5433 locally to avoid native Mac/PC Postgres conflicts
+
+    volumes:
+      - postgres_data:/var/lib/postgresql # Saves your data safely on your hard drive
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d optialgosel_pg"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    image: ghcr.io/behzad-moradi/optialgosel-github:1.0
+    
+    env_file:
+      - .env.docker
+
+    ports:
+      - "8000:8000"
+
+    depends_on:
+      postgres:
+        condition: service_healthy # Pauses API boot until database is 100% operational
+
+    restart: unless-stopped # Automatically reboots the API container if your Python app crashes
+
+volumes:
+  postgres_data: # Registers the persistent disk engine

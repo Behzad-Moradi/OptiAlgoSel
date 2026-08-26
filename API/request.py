@@ -13,7 +13,8 @@ data = {
 
 response = requests.post(
     "http://localhost:8000/prediction",
-    json=data
+    json=data,
+    timeout=20
 )
  
 print(response)

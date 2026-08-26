@@ -4,11 +4,13 @@ from API.services.connect_database_pg import get_db_pg
 import json
 from datetime import datetime, timezone
 import numpy as np
+import pytest
 
-client = TestClient(app)
+@pytest.fixture
+def client():
+    return TestClient(app)
 
-
-def test_prediction(mocker):
+def test_prediction(mocker, client):
     
     mock_conn = mocker.MagicMock()
     mock_cursor = mock_conn.cursor.return_value
